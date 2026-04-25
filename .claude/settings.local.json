@@ -10,7 +10,13 @@
       "Bash(git init *)",
       "Bash(git add *)",
       "Bash(git rm *)",
-      "Bash(git -c user.email=baransafataskin@gmail.com -c user.name=demir commit -m ' *)"
+      "Bash(git -c user.email=baransafataskin@gmail.com -c user.name=demir commit -m ' *)",
+      "Bash(git remote *)",
+      "Bash(git branch *)",
+      "Bash(git push *)",
+      "Bash(git fetch *)",
+      "Bash(git -c user.email=\"baransafataskin@gmail.com\" -c user.name=\"demir\" commit -m \"fix: add Netlify SPA redirect rules\")",
+      "Bash(git -c user.email=\"baransafataskin@gmail.com\" -c user.name=\"demir\" commit -m \"fix: prevent white screen when backend is unreachable\")"
     ]
   }
 }

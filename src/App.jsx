@@ -19,6 +19,7 @@ import EmployeeOrdersPage from './pages/employee/EmployeeOrdersPage';
 // Admin pages
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
+import AdminCategoriesPage from './pages/admin/AdminCategoriesPage';
 
 // Layout
 import Navbar from './components/Navbar';
@@ -59,6 +60,7 @@ export default function App() {
           {/* Admin */}
           <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute roles={['admin']}><AdminUsersPage /></ProtectedRoute>} />
+          <Route path="/admin/categories" element={<ProtectedRoute roles={['admin']}><AdminCategoriesPage /></ProtectedRoute>} />
 
           {/* 404 */}
           <Route path="*" element={<NotFoundPage />} />

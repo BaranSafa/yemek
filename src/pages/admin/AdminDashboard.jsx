@@ -23,6 +23,7 @@ export default function AdminDashboard() {
   ] : [];
 
   const navCards = [
+    { to: '/admin/categories', icon: '🏷️', title: 'Kategori Yönetimi' },
     { to: '/employee/products', icon: '🍜', title: 'Ürün Yönetimi' },
     { to: '/employee/deliver', icon: '✅', title: 'Sipariş Teslim' },
     { to: '/employee/orders', icon: '📋', title: 'Tüm Siparişler' },

@@ -28,6 +28,13 @@ api.interceptors.response.use(
   }
 );
 
+export const categoryAPI = {
+  getAll: () => api.get('/categories'),
+  create: (data) => api.post('/categories', data),
+  update: (id, data) => api.patch(`/categories/${id}`, data),
+  delete: (id) => api.delete(`/categories/${id}`),
+};
+
 export const authAPI = {
   login: (data) => api.post('/auth/login', data),
   employeeLogin: (data) => api.post('/auth/employee-login', data),

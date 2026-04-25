@@ -77,6 +77,7 @@ export default function Navbar() {
                     <>
                       <div style={styles.dropdownDivider} />
                       <Link to="/admin" style={styles.dropdownItem}>👑 Admin Paneli</Link>
+                      <Link to="/admin/categories" style={styles.dropdownItem}>🏷️ Kategoriler</Link>
                       <Link to="/admin/users" style={styles.dropdownItem}>👥 Kullanıcılar</Link>
                     </>
                   )}
