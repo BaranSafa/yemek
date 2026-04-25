@@ -11,7 +11,13 @@ api.interceptors.request.use((config) => {
 });
 
 api.interceptors.response.use(
-  (res) => res,
+  (res) => {
+    // API JSON yerine HTML dönüyorsa (backend kapalı) reject et
+    if (typeof res.data === 'string' && res.data.startsWith('<!')) {
+      return Promise.reject(new Error('Backend sunucuya ulaşılamıyor'));
+    }
+    return res;
+  },
   (err) => {
     if (err.response?.status === 401) {
       localStorage.removeItem('token');

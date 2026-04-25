@@ -9,6 +9,7 @@ const CATEGORY_ICONS = { Tümü: '🍴', Çorba: '🍲', Yemek: '🍽️', Tatl�
 export default function HomePage() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [apiError, setApiError] = useState(false);
   const [category, setCategory] = useState('Tümü');
   const [search, setSearch] = useState('');
 
@@ -18,9 +19,11 @@ export default function HomePage() {
       if (category !== 'Tümü') params.category = category;
       if (search.trim()) params.search = search.trim();
       const res = await productAPI.getAll(params);
-      setProducts(res.data);
+      setProducts(Array.isArray(res.data) ? res.data : []);
+      setApiError(false);
     } catch (err) {
       console.error(err);
+      setApiError(true);
     } finally {
       setLoading(false);
     }
@@ -98,6 +101,12 @@ export default function HomePage() {
         {/* Products grid */}
         {loading ? (
           <div className="spinner" />
+        ) : apiError ? (
+          <div style={emptyState}>
+            <div style={{ fontSize: 56, marginBottom: 12 }}>🔌</div>
+            <h3 style={{ fontFamily: "'Playfair Display', serif" }}>Sunucuya bağlanılamıyor</h3>
+            <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>Backend henüz bağlanmamış. Lütfen API URL'ini ayarlayın.</p>
+          </div>
         ) : products.length === 0 ? (
           <div style={emptyState}>
             <div style={{ fontSize: 56, marginBottom: 12 }}>🍽️</div>
