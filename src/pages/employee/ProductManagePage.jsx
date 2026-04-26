@@ -71,34 +71,28 @@ function StepMenuItem({ menuItems, selected, onSelect, selectedCategory, onNext,
         <span style={{ fontWeight: 600 }}>{selectedCategory.name}</span>
       </div>
       <h3 style={stepTitle}>Ürün Seçin</h3>
-      <p style={stepSubtitle}>Bu kategoride menüye eklenmiş ürünlerden birini seçin.</p>
+      <p style={stepSubtitle}>Satışa çıkarmak istediğiniz ürünü seçin.</p>
 
       {loading ? <div className="spinner" /> : filtered.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)' }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>🍽️</div>
-          <p>Bu kategoride henüz menü ürünü yok.</p>
-          <p style={{ fontSize: '0.82rem', marginTop: 4 }}>Admin panelinden "Menü Yönetimi" bölümüne gidin.</p>
+          <p>Bu kategoride henüz ürün tanımlanmamış.</p>
+          <p style={{ fontSize: '0.82rem', marginTop: 4 }}>Admin paneli → Ürün Yönetimi bölümünden ekleyin.</p>
         </div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 8 }}>
-          {filtered.map((item) => (
-            <button key={item._id} type="button" onClick={() => onSelect(item)}
-              style={{ ...menuItemRow, borderColor: selected?._id === item._id ? 'var(--terracotta)' : 'var(--border)', background: selected?._id === item._id ? '#fff3ef' : 'var(--cream)' }}>
-              <div style={menuItemImg}>
-                {item.imageUrl
-                  ? <img src={item.imageUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none'; }} />
-                  : <span style={{ fontSize: 28 }}>{selectedCategory.emoji || '🍽️'}</span>}
-              </div>
-              <div style={{ flex: 1, textAlign: 'left' }}>
-                <div style={{ fontWeight: 700 }}>{item.name}</div>
-                {item.description && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>{item.description}</div>}
-              </div>
-              <div style={{ fontWeight: 700, color: selected?._id === item._id ? 'var(--terracotta)' : 'var(--charcoal)', fontSize: '1rem', whiteSpace: 'nowrap' }}>
-                ₺{Number(item.basePrice).toFixed(2)}
-              </div>
-              {selected?._id === item._id && <span style={{ color: 'var(--terracotta)', fontWeight: 700 }}>✓</span>}
-            </button>
-          ))}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 }}>
+          {filtered.map((item) => {
+            const isSelected = selected?._id === item._id;
+            return (
+              <button key={item._id} type="button" onClick={() => onSelect(item)}
+                style={{ border: `2px solid ${isSelected ? 'var(--terracotta)' : 'var(--border)'}`, borderRadius: 'var(--radius)', padding: '14px 18px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: isSelected ? '#fff3ef' : 'var(--cream)', transition: 'all 0.15s', width: '100%', textAlign: 'left' }}>
+                <span style={{ fontWeight: 600, fontSize: '0.95rem', color: isSelected ? 'var(--terracotta)' : 'var(--charcoal)' }}>
+                  {item.name}
+                </span>
+                {isSelected && <span style={{ color: 'var(--terracotta)', fontWeight: 700, fontSize: '1.1rem' }}>✓</span>}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -300,7 +294,7 @@ export default function ProductManagePage() {
             <h1 style={pageTitle}>🍜 Ürün Yönetimi</h1>
             <p style={{ color: 'var(--text-muted)', marginTop: 4, fontSize: '0.9rem' }}>{products.length} ürün listelendi • Kapanış: 22:00</p>
           </div>
-          <button className="btn btn-primary btn-lg" onClick={openWizard} style={{ justifyContent: 'center' }}>+ Ürün Ekle</button>
+          <button className="btn btn-primary btn-lg" onClick={openWizard} style={{ justifyContent: 'center' }}>+ Satışa Çıkarılacak Ürün Ekle</button>
         </div>
 
         {/* Wizard */}

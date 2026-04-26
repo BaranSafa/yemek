@@ -23,11 +23,11 @@ export default function AdminDashboard() {
   ] : [];
 
   const navCards = [
-    { to: '/admin/categories', icon: '🏷️', title: 'Kategori Yönetimi' },
-    { to: '/employee/products', icon: '🍜', title: 'Ürün Yönetimi' },
-    { to: '/employee/deliver', icon: '✅', title: 'Sipariş Teslim' },
-    { to: '/employee/orders', icon: '📋', title: 'Tüm Siparişler' },
-    { to: '/admin/users', icon: '👥', title: 'Kullanıcı Yönetimi' },
+    { to: '/admin/menu', icon: '🍽️', title: 'Ürün Yönetimi', desc: 'Menüye ürün ekle, düzenle, sil' },
+    { to: '/admin/categories', icon: '🏷️', title: 'Kategori Yönetimi', desc: 'Kategorileri düzenle' },
+    { to: '/employee/deliver', icon: '✅', title: 'Sipariş Teslim', desc: 'Teslimat kodu ile teslim et' },
+    { to: '/employee/orders', icon: '📋', title: 'Tüm Siparişler', desc: 'Sipariş listesi ve detaylar' },
+    { to: '/admin/users', icon: '👥', title: 'Kullanıcı Yönetimi', desc: 'Kullanıcıları görüntüle' },
   ];
 
   return (
@@ -65,8 +65,11 @@ export default function AdminDashboard() {
           {navCards.map((c) => (
             <Link to={c.to} key={c.to} style={navCard}>
               <span style={{ fontSize: 28 }}>{c.icon}</span>
-              <span style={{ fontWeight: 600 }}>{c.title}</span>
-              <span style={{ marginLeft: 'auto', color: 'var(--terracotta)' }}>→</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontWeight: 700 }}>{c.title}</div>
+                {c.desc && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>{c.desc}</div>}
+              </div>
+              <span style={{ color: 'var(--terracotta)' }}>→</span>
             </Link>
           ))}
         </div>
