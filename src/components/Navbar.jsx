@@ -2,19 +2,27 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useLanguage } from '../context/LanguageContext';
 import toast from 'react-hot-toast';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const { totalItems } = useCart();
+  const { lang, toggle, t } = useLanguage();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
 
   const handleLogout = () => {
     logout();
-    toast.success('Çıkış yapıldı');
+    toast.success(lang === 'tr' ? 'Çıkış yapıldı' : 'Signed out');
     navigate('/');
   };
+
+  const roleLabel = user?.role === 'admin'
+    ? t('nav.roleAdmin')
+    : user?.role === 'employee'
+    ? t('nav.roleEmployee')
+    : t('nav.roleCustomer');
 
   return (
     <nav style={styles.nav}>
@@ -30,6 +38,13 @@ export default function Navbar() {
 
         {/* Right side */}
         <div style={styles.right}>
+          {/* Language toggle */}
+          <button onClick={toggle} style={styles.langBtn} title="Change language">
+            <span style={styles.langFlag}>{lang === 'tr' ? '🇹🇷' : '🇬🇧'}</span>
+            <span style={styles.langText}>{lang === 'tr' ? 'TR' : 'EN'}</span>
+          </button>
+
+          {/* Cart — only customers */}
           {user?.role === 'customer' && (
             <Link to="/cart" style={styles.cartBtn}>
               <span>🛒</span>
@@ -38,7 +53,7 @@ export default function Navbar() {
           )}
 
           {!user ? (
-            <Link to="/login" className="btn btn-primary btn-sm">Giriş Yap</Link>
+            <Link to="/login" className="btn btn-primary btn-sm">{t('nav.login')}</Link>
           ) : (
             <div style={{ position: 'relative' }}>
               <button style={styles.avatarBtn} onClick={() => setMenuOpen(!menuOpen)}>
@@ -55,36 +70,34 @@ export default function Navbar() {
                 <div style={styles.dropdown} onClick={() => setMenuOpen(false)}>
                   <div style={styles.dropdownHeader}>
                     <div style={{ fontWeight: 700 }}>{user.firstName} {user.lastName}</div>
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                      {user.role === 'admin' ? '👑 Admin' : user.role === 'employee' ? '👷 Çalışan' : '👤 Müşteri'}
-                    </div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{roleLabel}</div>
                   </div>
 
                   {user.role === 'customer' && (
-                    <Link to="/orders" style={styles.dropdownItem}>📦 Siparişlerim</Link>
+                    <Link to="/orders" style={styles.dropdownItem}>📦 {t('nav.orders')}</Link>
                   )}
 
                   {(user.role === 'employee' || user.role === 'admin') && (
                     <>
-                      <Link to="/employee" style={styles.dropdownItem}>🏠 Çalışan Paneli</Link>
-                      <Link to="/employee/products" style={styles.dropdownItem}>🍜 Ürün Yönetimi</Link>
-                      <Link to="/employee/deliver" style={styles.dropdownItem}>✅ Teslimat</Link>
-                      <Link to="/employee/orders" style={styles.dropdownItem}>📋 Siparişler</Link>
+                      <Link to="/employee" style={styles.dropdownItem}>🏠 {t('nav.employeePanel')}</Link>
+                      <Link to="/employee/products" style={styles.dropdownItem}>🍜 {t('nav.productMgmt')}</Link>
+                      <Link to="/employee/deliver" style={styles.dropdownItem}>✅ {t('nav.delivery')}</Link>
+                      <Link to="/employee/orders" style={styles.dropdownItem}>📋 {t('nav.allOrders')}</Link>
                     </>
                   )}
 
                   {user.role === 'admin' && (
                     <>
                       <div style={styles.dropdownDivider} />
-                      <Link to="/admin" style={styles.dropdownItem}>👑 Admin Paneli</Link>
-                      <Link to="/admin/categories" style={styles.dropdownItem}>🏷️ Kategoriler</Link>
-                      <Link to="/admin/users" style={styles.dropdownItem}>👥 Kullanıcılar</Link>
+                      <Link to="/admin" style={styles.dropdownItem}>👑 {t('nav.adminPanel')}</Link>
+                      <Link to="/admin/categories" style={styles.dropdownItem}>🏷️ {t('nav.categories')}</Link>
+                      <Link to="/admin/users" style={styles.dropdownItem}>👥 {t('nav.users')}</Link>
                     </>
                   )}
 
                   <div style={styles.dropdownDivider} />
                   <button onClick={handleLogout} style={{ ...styles.dropdownItem, color: 'var(--danger)', width: '100%', textAlign: 'left' }}>
-                    🚪 Çıkış Yap
+                    🚪 {t('nav.logout')}
                   </button>
                 </div>
               )}
@@ -111,11 +124,7 @@ const styles = {
     justifyContent: 'space-between',
     height: 70,
   },
-  logo: {
-    display: 'flex',
-    alignItems: 'center',
-    gap: 12,
-  },
+  logo: { display: 'flex', alignItems: 'center', gap: 12 },
   logoIcon: { fontSize: 28 },
   logoTitle: {
     fontFamily: "'Playfair Display', serif",
@@ -131,11 +140,24 @@ const styles = {
     letterSpacing: '0.1em',
     textTransform: 'uppercase',
   },
-  right: {
+  right: { display: 'flex', alignItems: 'center', gap: 12 },
+  langBtn: {
     display: 'flex',
     alignItems: 'center',
-    gap: 16,
+    gap: 5,
+    background: 'var(--cream)',
+    border: '1.5px solid var(--border)',
+    borderRadius: 'var(--radius-sm)',
+    padding: '5px 10px',
+    cursor: 'pointer',
+    fontSize: '0.82rem',
+    fontWeight: 700,
+    color: 'var(--charcoal)',
+    transition: 'all 0.15s',
+    fontFamily: "'DM Sans', sans-serif",
   },
+  langFlag: { fontSize: 16 },
+  langText: { letterSpacing: '0.04em' },
   cartBtn: {
     position: 'relative',
     fontSize: 22,
@@ -213,9 +235,5 @@ const styles = {
     border: 'none',
     textDecoration: 'none',
   },
-  dropdownDivider: {
-    height: 1,
-    background: 'var(--border)',
-    margin: '4px 0',
-  },
+  dropdownDivider: { height: 1, background: 'var(--border)', margin: '4px 0' },
 };

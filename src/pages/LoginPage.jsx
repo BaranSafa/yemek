@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import toast from 'react-hot-toast';
 
 export default function LoginPage() {
@@ -9,6 +10,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
@@ -17,10 +19,10 @@ export default function LoginPage() {
     try {
       const res = await authAPI.login({ phone, password });
       login(res.data.token, res.data.user);
-      toast.success('Hoş geldiniz!');
+      toast.success(t('login.welcome'));
       navigate('/');
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Giriş başarısız');
+      toast.error(err.response?.data?.message || t('login.error'));
     } finally {
       setLoading(false);
     }
@@ -32,16 +34,16 @@ export default function LoginPage() {
         <div style={header}>
           <div style={{ fontSize: 36, marginBottom: 4 }}>🍽️</div>
           <h1 style={title}>Adile Sultan</h1>
-          <p style={subtitle}>Hesabınıza giriş yapın</p>
+          <p style={subtitle}>{t('login.subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} style={formStyle}>
           <div className="form-group">
-            <label className="form-label">Telefon Numarası</label>
+            <label className="form-label">{t('login.phone')}</label>
             <input
               type="tel"
               className="form-input"
-              placeholder="05XX XXX XX XX"
+              placeholder={t('login.phonePlaceholder')}
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
               required
@@ -50,7 +52,7 @@ export default function LoginPage() {
           </div>
 
           <div className="form-group">
-            <label className="form-label">Şifre</label>
+            <label className="form-label">{t('login.password')}</label>
             <input
               type="password"
               className="form-input"
@@ -67,14 +69,14 @@ export default function LoginPage() {
             disabled={loading}
             style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}
           >
-            {loading ? 'Giriş yapılıyor...' : 'Giriş Yap'}
+            {loading ? t('login.loading') : t('login.submit')}
           </button>
         </form>
 
         <div style={footer}>
-          Hesabınız yok mu?{' '}
+          {t('login.noAccount')}{' '}
           <Link to="/register" style={{ color: 'var(--terracotta)', fontWeight: 600 }}>
-            Kayıt Ol
+            {t('login.register')}
           </Link>
         </div>
       </div>

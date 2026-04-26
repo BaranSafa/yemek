@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { authAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 import toast from 'react-hot-toast';
 
 export default function RegisterPage() {
   const [form, setForm] = useState({ firstName: '', lastName: '', phone: '', password: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -15,16 +17,16 @@ export default function RegisterPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (form.password !== form.confirmPassword) {
-      toast.error('Şifreler eşleşmiyor!'); return;
+      toast.error(t('register.mismatch')); return;
     }
     setLoading(true);
     try {
       const res = await authAPI.register(form);
       login(res.data.token, res.data.user);
-      toast.success('Hesabınız oluşturuldu!');
+      toast.success(t('register.success'));
       navigate('/');
     } catch (err) {
-      toast.error(err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || 'Kayıt başarısız');
+      toast.error(err.response?.data?.message || err.response?.data?.errors?.[0]?.msg || t('register.error'));
     } finally {
       setLoading(false);
     }
@@ -35,45 +37,45 @@ export default function RegisterPage() {
       <div style={card}>
         <div style={header}>
           <div style={{ fontSize: 36, marginBottom: 4 }}>🍽️</div>
-          <h1 style={title}>Kayıt Ol</h1>
-          <p style={subtitle}>Adile Sultan ailesine katılın</p>
+          <h1 style={title}>{t('register.title')}</h1>
+          <p style={subtitle}>{t('register.subtitle')}</p>
         </div>
 
         <form onSubmit={handleSubmit} style={formStyle}>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
             <div className="form-group">
-              <label className="form-label">Ad</label>
-              <input name="firstName" className="form-input" placeholder="Ayşe" value={form.firstName} onChange={handleChange} required />
+              <label className="form-label">{t('register.firstName')}</label>
+              <input name="firstName" className="form-input" placeholder={t('register.firstPlaceholder')} value={form.firstName} onChange={handleChange} required />
             </div>
             <div className="form-group">
-              <label className="form-label">Soyad</label>
-              <input name="lastName" className="form-input" placeholder="Kaya" value={form.lastName} onChange={handleChange} required />
+              <label className="form-label">{t('register.lastName')}</label>
+              <input name="lastName" className="form-input" placeholder={t('register.lastPlaceholder')} value={form.lastName} onChange={handleChange} required />
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Telefon Numarası</label>
-            <input name="phone" type="tel" className="form-input" placeholder="05XX XXX XX XX" value={form.phone} onChange={handleChange} required />
+            <label className="form-label">{t('register.phone')}</label>
+            <input name="phone" type="tel" className="form-input" placeholder={t('register.phonePlaceholder')} value={form.phone} onChange={handleChange} required />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Şifre</label>
-            <input name="password" type="password" className="form-input" placeholder="En az 6 karakter" value={form.password} onChange={handleChange} required />
+            <label className="form-label">{t('register.password')}</label>
+            <input name="password" type="password" className="form-input" placeholder={t('register.passwordPlaceholder')} value={form.password} onChange={handleChange} required />
           </div>
 
           <div className="form-group">
-            <label className="form-label">Şifre Tekrarı</label>
-            <input name="confirmPassword" type="password" className="form-input" placeholder="Şifrenizi tekrar girin" value={form.confirmPassword} onChange={handleChange} required />
+            <label className="form-label">{t('register.confirm')}</label>
+            <input name="confirmPassword" type="password" className="form-input" placeholder={t('register.confirmPlaceholder')} value={form.confirmPassword} onChange={handleChange} required />
           </div>
 
           <button type="submit" className="btn btn-primary" disabled={loading} style={{ width: '100%', justifyContent: 'center', marginTop: 8 }}>
-            {loading ? 'Kaydediliyor...' : 'Hesap Oluştur'}
+            {loading ? t('register.loading') : t('register.submit')}
           </button>
         </form>
 
         <div style={footer}>
-          Zaten hesabınız var mı?{' '}
-          <Link to="/login" style={{ color: 'var(--terracotta)', fontWeight: 600 }}>Giriş Yap</Link>
+          {t('register.hasAccount')}{' '}
+          <Link to="/login" style={{ color: 'var(--terracotta)', fontWeight: 600 }}>{t('register.login')}</Link>
         </div>
       </div>
     </div>

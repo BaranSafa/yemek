@@ -1,20 +1,22 @@
 import { useState, useEffect } from 'react';
 import { orderAPI } from '../utils/api';
-
-const statusStyle = {
-  'Bekliyor': { bg: '#fff8e1', color: '#c17f24', label: '⏳ Teslim Alınmayı Bekliyor' },
-  'Teslim Edildi': { bg: '#edf7f1', color: '#4a7c59', label: '✅ Teslim Edildi' },
-  'İptal': { bg: '#fdecea', color: '#c0392b', label: '❌ İptal Edildi' },
-};
+import { useLanguage } from '../context/LanguageContext';
 
 export default function MyOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('active');
+  const { t } = useLanguage();
+
+  const statusStyle = {
+    'Bekliyor':      { bg: '#fff8e1', color: '#c17f24', label: t('orders.statusPending') },
+    'Teslim Edildi': { bg: '#edf7f1', color: '#4a7c59', label: t('orders.statusDone') },
+    'İptal':         { bg: '#fdecea', color: '#c0392b', label: t('orders.statusCancelled') },
+  };
 
   useEffect(() => {
     orderAPI.myOrders()
-      .then((res) => setOrders(res.data))
+      .then((res) => setOrders(Array.isArray(res.data) ? res.data : []))
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -26,16 +28,15 @@ export default function MyOrdersPage() {
   return (
     <div style={page}>
       <div className="container">
-        <h1 style={pageTitle}>📦 Siparişlerim</h1>
+        <h1 style={pageTitle}>{t('orders.title')}</h1>
 
-        {/* Tabs */}
         <div style={tabRow}>
           <button style={{ ...tabBtn, ...(tab === 'active' ? tabActive : {}) }} onClick={() => setTab('active')}>
-            Aktif Siparişler
+            {t('orders.active')}
             {activeOrders.length > 0 && <span style={tabBadge}>{activeOrders.length}</span>}
           </button>
           <button style={{ ...tabBtn, ...(tab === 'past' ? tabActive : {}) }} onClick={() => setTab('past')}>
-            Geçmiş Siparişler
+            {t('orders.past')}
           </button>
         </div>
 
@@ -43,7 +44,7 @@ export default function MyOrdersPage() {
           <div style={empty}>
             <div style={{ fontSize: 48 }}>{tab === 'active' ? '🕐' : '📭'}</div>
             <p style={{ marginTop: 12, color: 'var(--text-muted)' }}>
-              {tab === 'active' ? 'Bekleyen siparişiniz yok.' : 'Geçmiş siparişiniz bulunmuyor.'}
+              {tab === 'active' ? t('orders.noPending') : t('orders.noHistory')}
             </p>
           </div>
         ) : (
@@ -52,14 +53,13 @@ export default function MyOrdersPage() {
               const st = statusStyle[order.status] || statusStyle['Bekliyor'];
               return (
                 <div key={order._id} style={orderCard}>
-                  {/* Header */}
                   <div style={orderHeader}>
                     <div>
                       <div style={{ fontWeight: 700, fontSize: '0.82rem', color: 'var(--text-muted)', letterSpacing: '0.06em' }}>
-                        SİPARİŞ #{order._id.slice(-8).toUpperCase()}
+                        #{order._id.slice(-8).toUpperCase()}
                       </div>
                       <div style={{ fontSize: '0.82rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                        {new Date(order.createdAt).toLocaleString('tr-TR')}
+                        {new Date(order.createdAt).toLocaleString(t('orders.locale') || 'tr-TR')}
                       </div>
                     </div>
                     <span style={{ background: st.bg, color: st.color, padding: '5px 14px', borderRadius: '999px', fontWeight: 600, fontSize: '0.82rem' }}>
@@ -67,7 +67,6 @@ export default function MyOrdersPage() {
                     </span>
                   </div>
 
-                  {/* Items */}
                   <div style={{ padding: '16px 20px' }}>
                     {order.items.map((item, i) => (
                       <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6, fontSize: '0.9rem' }}>
@@ -77,16 +76,15 @@ export default function MyOrdersPage() {
                     ))}
                   </div>
 
-                  {/* Footer */}
                   <div style={orderFooter}>
                     <span style={{ fontWeight: 700 }}>
-                      Toplam: <span style={{ color: 'var(--terracotta)' }}>₺{order.totalAmount.toFixed(2)}</span>
+                      {t('orders.total')}: <span style={{ color: 'var(--terracotta)' }}>₺{order.totalAmount.toFixed(2)}</span>
                     </span>
 
                     {order.status === 'Bekliyor' && (
                       <div style={codeWrap}>
                         <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.08em' }}>
-                          TESLİMAT KODU
+                          {t('orders.codeLabel')}
                         </span>
                         <div style={codeDigits}>{order.deliveryCode}</div>
                       </div>
@@ -94,7 +92,7 @@ export default function MyOrdersPage() {
 
                     {order.status === 'Teslim Edildi' && (
                       <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                        {new Date(order.deliveredAt).toLocaleString('tr-TR')} teslim edildi
+                        {new Date(order.deliveredAt).toLocaleString('tr-TR')} {t('orders.deliveredAt')}
                       </span>
                     )}
                   </div>

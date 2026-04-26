@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { orderAPI } from '../utils/api';
 import { useCart } from '../context/CartContext';
+import { useLanguage } from '../context/LanguageContext';
 import toast from 'react-hot-toast';
 
 export default function CheckoutPage() {
   const { cartItems, totalPrice, clearCart } = useCart();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const [card, setCard] = useState({ number: '', name: '', expiry: '', cvv: '' });
   const [loading, setLoading] = useState(false);
@@ -18,13 +20,10 @@ export default function CheckoutPage() {
     setLoading(true);
     try {
       const items = cartItems.map((i) => ({ productId: i._id, quantity: i.quantity }));
-      const res = await orderAPI.create({
-        items,
-        paymentInfo: { cardLastFour: card.number.slice(-4) },
-      });
+      const res = await orderAPI.create({ items, paymentInfo: { cardLastFour: card.number.slice(-4) } });
       setSuccess(res.data.order);
       clearCart();
-      toast.success('Siparişiniz alındı!');
+      toast.success(t('checkout.successTitle'));
     } catch (err) {
       toast.error(err.response?.data?.message || 'Sipariş oluşturulamadı');
     } finally {
@@ -38,21 +37,19 @@ export default function CheckoutPage() {
         <div style={successCard}>
           <div style={{ fontSize: 64, marginBottom: 16 }}>✅</div>
           <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', marginBottom: 8 }}>
-            Sipariş Onaylandı!
+            {t('checkout.successTitle')}
           </h2>
-          <p style={{ color: 'var(--text-muted)', marginBottom: 28 }}>
-            Restorana geldiğinizde aşağıdaki kodu gösteriniz.
-          </p>
+          <p style={{ color: 'var(--text-muted)', marginBottom: 28 }}>{t('checkout.successSub')}</p>
 
           <div style={codeBox}>
             <div style={{ fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.1em', color: 'var(--text-muted)', marginBottom: 8 }}>
-              TESLİMAT KODUNUZ
+              {t('checkout.codeLabel')}
             </div>
             <div style={codeNumber}>{success.deliveryCode}</div>
           </div>
 
           <div style={{ marginTop: 24, textAlign: 'left', background: 'var(--cream)', borderRadius: 'var(--radius-sm)', padding: 16 }}>
-            <div style={{ fontWeight: 700, marginBottom: 8 }}>Sipariş Detayı</div>
+            <div style={{ fontWeight: 700, marginBottom: 8 }}>{t('checkout.detailTitle')}</div>
             {success.items.map((item, i) => (
               <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem', marginBottom: 4 }}>
                 <span>{item.productName} × {item.quantity}</span>
@@ -60,14 +57,14 @@ export default function CheckoutPage() {
               </div>
             ))}
             <div style={{ borderTop: '1px solid var(--border)', paddingTop: 8, marginTop: 8, fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}>
-              <span>Toplam</span>
+              <span>{t('checkout.total')}</span>
               <span style={{ color: 'var(--terracotta)' }}>₺{success.totalAmount.toFixed(2)}</span>
             </div>
           </div>
 
           <div style={{ display: 'flex', gap: 12, marginTop: 24 }}>
-            <button className="btn btn-secondary" onClick={() => navigate('/')} style={{ flex: 1, justifyContent: 'center' }}>Ana Sayfa</button>
-            <button className="btn btn-primary" onClick={() => navigate('/orders')} style={{ flex: 1, justifyContent: 'center' }}>Siparişlerim</button>
+            <button className="btn btn-secondary" onClick={() => navigate('/')} style={{ flex: 1, justifyContent: 'center' }}>{t('checkout.home')}</button>
+            <button className="btn btn-primary" onClick={() => navigate('/orders')} style={{ flex: 1, justifyContent: 'center' }}>{t('checkout.myOrders')}</button>
           </div>
         </div>
       </div>
@@ -77,49 +74,40 @@ export default function CheckoutPage() {
   return (
     <div style={page}>
       <div className="container">
-        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '2rem', marginBottom: 28 }}>Ödeme</h1>
+        <h1 style={{ fontFamily: "'Playfair Display', serif", fontSize: '2rem', marginBottom: 28 }}>{t('checkout.title')}</h1>
         <div style={layout}>
-          {/* Payment form */}
           <div style={formCard}>
-            <h3 style={{ fontFamily: "'Playfair Display', serif", marginBottom: 20 }}>💳 Kart Bilgileri</h3>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", marginBottom: 20 }}>{t('checkout.cardTitle')}</h3>
             <div style={{ background: '#fff8e1', border: '1px solid var(--gold)', borderRadius: 'var(--radius-sm)', padding: 12, marginBottom: 20, fontSize: '0.85rem', color: '#8a6010' }}>
-              ⚠️ Bu bir demo ödeme ekranıdır. Gerçek kart bilgisi girmenize gerek yoktur.
+              ⚠️ {t('checkout.demo')}
             </div>
-
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div className="form-group">
-                <label className="form-label">Kart Numarası</label>
-                <input name="number" className="form-input" placeholder="1234 5678 9012 3456" maxLength={19}
-                  value={card.number} onChange={handleChange} required />
+                <label className="form-label">{t('checkout.cardNumber')}</label>
+                <input name="number" className="form-input" placeholder="1234 5678 9012 3456" maxLength={19} value={card.number} onChange={handleChange} required />
               </div>
               <div className="form-group">
-                <label className="form-label">Kart Üzerindeki İsim</label>
-                <input name="name" className="form-input" placeholder="AYŞE KAYA"
-                  value={card.name} onChange={handleChange} required />
+                <label className="form-label">{t('checkout.cardName')}</label>
+                <input name="name" className="form-input" placeholder={t('checkout.cardNamePlaceholder')} value={card.name} onChange={handleChange} required />
               </div>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                 <div className="form-group">
-                  <label className="form-label">Son Kullanma</label>
-                  <input name="expiry" className="form-input" placeholder="MM/YY" maxLength={5}
-                    value={card.expiry} onChange={handleChange} required />
+                  <label className="form-label">{t('checkout.expiry')}</label>
+                  <input name="expiry" className="form-input" placeholder="MM/YY" maxLength={5} value={card.expiry} onChange={handleChange} required />
                 </div>
                 <div className="form-group">
-                  <label className="form-label">CVV</label>
-                  <input name="cvv" className="form-input" placeholder="123" maxLength={4}
-                    value={card.cvv} onChange={handleChange} required />
+                  <label className="form-label">{t('checkout.cvv')}</label>
+                  <input name="cvv" className="form-input" placeholder="123" maxLength={4} value={card.cvv} onChange={handleChange} required />
                 </div>
               </div>
-
-              <button type="submit" className="btn btn-primary btn-lg"
-                style={{ justifyContent: 'center', marginTop: 8 }} disabled={loading}>
-                {loading ? 'İşleniyor...' : `Siparişi Onayla — ₺${totalPrice.toFixed(2)}`}
+              <button type="submit" className="btn btn-primary btn-lg" style={{ justifyContent: 'center', marginTop: 8 }} disabled={loading}>
+                {loading ? t('checkout.processing') : `${t('checkout.confirm')} — ₺${totalPrice.toFixed(2)}`}
               </button>
             </form>
           </div>
 
-          {/* Summary */}
           <div style={summaryCard}>
-            <h3 style={{ fontFamily: "'Playfair Display', serif", marginBottom: 16 }}>Sipariş Özeti</h3>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", marginBottom: 16 }}>{t('checkout.summaryTitle')}</h3>
             {cartItems.map((item) => (
               <div key={item._id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 10, fontSize: '0.9rem' }}>
                 <span>{item.name} × {item.quantity}</span>
@@ -127,7 +115,7 @@ export default function CheckoutPage() {
               </div>
             ))}
             <div style={{ borderTop: '2px solid var(--border)', paddingTop: 12, marginTop: 8, fontWeight: 700, display: 'flex', justifyContent: 'space-between' }}>
-              <span>Toplam</span>
+              <span>{t('checkout.total')}</span>
               <span style={{ color: 'var(--terracotta)', fontSize: '1.1rem' }}>₺{totalPrice.toFixed(2)}</span>
             </div>
           </div>

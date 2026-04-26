@@ -1,8 +1,10 @@
 import { useCart } from '../context/CartContext';
+import { useLanguage } from '../context/LanguageContext';
 import { Link, useNavigate } from 'react-router-dom';
 
 export default function CartPage() {
   const { cartItems, removeFromCart, updateQuantity, totalPrice, clearCart } = useCart();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   if (cartItems.length === 0) {
@@ -10,9 +12,9 @@ export default function CartPage() {
       <div style={page}>
         <div style={emptyBox}>
           <div style={{ fontSize: 64 }}>🛒</div>
-          <h2 style={{ fontFamily: "'Playfair Display', serif", marginTop: 12 }}>Sepetiniz Boş</h2>
-          <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>Lezzetli yemekler sizi bekliyor!</p>
-          <Link to="/" className="btn btn-primary" style={{ marginTop: 24 }}>Alışverişe Başla</Link>
+          <h2 style={{ fontFamily: "'Playfair Display', serif", marginTop: 12 }}>{t('cart.empty')}</h2>
+          <p style={{ color: 'var(--text-muted)', marginTop: 8 }}>{t('cart.emptySub')}</p>
+          <Link to="/" className="btn btn-primary" style={{ marginTop: 24 }}>{t('cart.startShopping')}</Link>
         </div>
       </div>
     );
@@ -21,7 +23,7 @@ export default function CartPage() {
   return (
     <div className="page-enter" style={page}>
       <div className="container">
-        <h1 style={pageTitle}>Sepetim</h1>
+        <h1 style={pageTitle}>{t('cart.title')}</h1>
 
         <div style={layout}>
           {/* Items */}
@@ -33,24 +35,19 @@ export default function CartPage() {
                   <div style={{ fontWeight: 700, fontFamily: "'Playfair Display', serif" }}>{item.name}</div>
                   <div style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{item.category}</div>
                   {item.discountRate > 0 && (
-                    <span className="badge badge-discount" style={{ marginTop: 4 }}>%{item.discountRate} indirimli</span>
+                    <span className="badge badge-discount" style={{ marginTop: 4 }}>%{item.discountRate} {t('cart.discounted')}</span>
                   )}
                 </div>
 
-                {/* Quantity */}
                 <div style={qtyRow}>
                   <button style={qtyBtn} onClick={() => updateQuantity(item._id, item.quantity - 1)}>−</button>
                   <span style={{ fontWeight: 700, minWidth: 24, textAlign: 'center' }}>{item.quantity}</span>
-                  <button
-                    style={qtyBtn}
-                    onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                    disabled={item.quantity >= item.remainingPortions}
-                  >+</button>
+                  <button style={qtyBtn} onClick={() => updateQuantity(item._id, item.quantity + 1)} disabled={item.quantity >= item.remainingPortions}>+</button>
                 </div>
 
                 <div style={{ textAlign: 'right', minWidth: 80 }}>
                   <div style={{ fontWeight: 700, color: 'var(--terracotta)' }}>₺{(item.currentPrice * item.quantity).toFixed(2)}</div>
-                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>₺{item.currentPrice?.toFixed(2)} / adet</div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>₺{item.currentPrice?.toFixed(2)} {t('cart.perUnit')}</div>
                 </div>
 
                 <button onClick={() => removeFromCart(item._id)} style={removeBtn}>✕</button>
@@ -58,24 +55,24 @@ export default function CartPage() {
             ))}
 
             <button onClick={clearCart} className="btn btn-ghost btn-sm" style={{ marginTop: 8 }}>
-              🗑 Sepeti Temizle
+              🗑 {t('cart.clear')}
             </button>
           </div>
 
           {/* Summary */}
           <div style={summary}>
-            <h3 style={{ fontFamily: "'Playfair Display', serif", marginBottom: 20 }}>Sipariş Özeti</h3>
+            <h3 style={{ fontFamily: "'Playfair Display', serif", marginBottom: 20 }}>{t('cart.summary')}</h3>
 
             <div style={summaryRow}>
-              <span>Ara Toplam</span>
+              <span>{t('cart.subtotal')}</span>
               <span>₺{totalPrice.toFixed(2)}</span>
             </div>
             <div style={summaryRow}>
-              <span>Teslimat</span>
-              <span style={{ color: 'var(--success)' }}>Ücretsiz</span>
+              <span>{t('cart.delivery')}</span>
+              <span style={{ color: 'var(--success)' }}>{t('cart.free')}</span>
             </div>
             <div style={{ ...summaryRow, borderTop: '2px solid var(--border)', paddingTop: 12, marginTop: 8, fontWeight: 700, fontSize: '1.1rem' }}>
-              <span>Toplam</span>
+              <span>{t('cart.total')}</span>
               <span style={{ color: 'var(--terracotta)' }}>₺{totalPrice.toFixed(2)}</span>
             </div>
 
@@ -84,11 +81,11 @@ export default function CartPage() {
               style={{ width: '100%', justifyContent: 'center', marginTop: 20 }}
               onClick={() => navigate('/checkout')}
             >
-              Ödemeye Geç →
+              {t('cart.checkout')}
             </button>
 
             <Link to="/" style={{ display: 'block', textAlign: 'center', marginTop: 12, color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-              ← Alışverişe devam et
+              {t('cart.continue')}
             </Link>
           </div>
         </div>
