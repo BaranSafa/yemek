@@ -20,6 +20,7 @@ import EmployeeOrdersPage from './pages/employee/EmployeeOrdersPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminCategoriesPage from './pages/admin/AdminCategoriesPage';
+import AdminLoginPage from './pages/admin/AdminLoginPage';
 
 // Layout
 import Navbar from './components/Navbar';
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={user ? <Navigate to="/" /> : <LoginPage />} />
           <Route path="/register" element={user ? <Navigate to="/" /> : <RegisterPage />} />
+          <Route path="/admin/login" element={<AdminLoginPage />} />
 
           {/* Customer */}
           <Route path="/cart" element={<ProtectedRoute roles={['customer']}><CartPage /></ProtectedRoute>} />
