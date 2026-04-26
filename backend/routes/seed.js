@@ -74,4 +74,31 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/seed/categories — sadece kategorileri ekler (yoksa)
+router.get('/categories', async (req, res) => {
+  try {
+    const defaults = [
+      { name: 'Çorba',    emoji: '🥣', description: 'Sıcak ve besleyici çorbalar' },
+      { name: 'Yemek',    emoji: '🍛', description: 'Ana yemekler ve etli tarifler' },
+      { name: 'Tatlı',    emoji: '🍮', description: 'Geleneksel Türk tatlıları' },
+      { name: 'İçecek',   emoji: '☕', description: 'Sıcak ve soğuk içecekler' },
+      { name: 'Salata',   emoji: '🥗', description: 'Taze ve hafif salatalar' },
+      { name: 'Kahvaltı', emoji: '🍳', description: 'Sabah kahvaltı çeşitleri' },
+    ];
+
+    const added = [];
+    for (const cat of defaults) {
+      const exists = await Category.findOne({ name: cat.name });
+      if (!exists) {
+        await Category.create(cat);
+        added.push(cat.name);
+      }
+    }
+
+    res.json({ message: 'Kategoriler kontrol edildi', added: added.length ? added : 'Zaten mevcut' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;
