@@ -26,6 +26,7 @@ app.use(express.json());
 app.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date() }));
 
 // Rotalar
+app.use('/api/seed',       require('./routes/seed'));
 app.use('/api/auth',       require('./routes/auth'));
 app.use('/api/categories', require('./routes/categories'));
 app.use('/api/menu-items', require('./routes/menu'));
