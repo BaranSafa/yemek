@@ -20,7 +20,11 @@ import EmployeeOrdersPage from './pages/employee/EmployeeOrdersPage';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminUsersPage from './pages/admin/AdminUsersPage';
 import AdminCategoriesPage from './pages/admin/AdminCategoriesPage';
+import AdminMenuPage from './pages/admin/AdminMenuPage';
 import AdminLoginPage from './pages/admin/AdminLoginPage';
+
+// Customer pages
+import ProfilePage from './pages/ProfilePage';
 
 // Layout
 import Navbar from './components/Navbar';
@@ -52,6 +56,7 @@ export default function App() {
           <Route path="/cart" element={<ProtectedRoute roles={['customer']}><CartPage /></ProtectedRoute>} />
           <Route path="/checkout" element={<ProtectedRoute roles={['customer']}><CheckoutPage /></ProtectedRoute>} />
           <Route path="/orders" element={<ProtectedRoute roles={['customer']}><MyOrdersPage /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute roles={['customer']}><ProfilePage /></ProtectedRoute>} />
 
           {/* Employee */}
           <Route path="/employee" element={<ProtectedRoute roles={['employee', 'admin']}><EmployeeDashboard /></ProtectedRoute>} />
@@ -63,6 +68,7 @@ export default function App() {
           <Route path="/admin" element={<ProtectedRoute roles={['admin']}><AdminDashboard /></ProtectedRoute>} />
           <Route path="/admin/users" element={<ProtectedRoute roles={['admin']}><AdminUsersPage /></ProtectedRoute>} />
           <Route path="/admin/categories" element={<ProtectedRoute roles={['admin']}><AdminCategoriesPage /></ProtectedRoute>} />
+          <Route path="/admin/menu" element={<ProtectedRoute roles={['admin']}><AdminMenuPage /></ProtectedRoute>} />
 
           {/* 404 */}
           <Route path="*" element={<NotFoundPage />} />

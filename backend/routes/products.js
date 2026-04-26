@@ -1,12 +1,13 @@
 const router = require('express').Router();
 const Product = require('../models/Product');
+const MenuItem = require('../models/MenuItem');
 const { verifyToken, requireRole } = require('../middleware/auth');
 
 function refreshPrices(products) {
   products.forEach((p) => p.calculateCurrentPrice());
 }
 
-// GET /products — aktif ürünler, güncel fiyatlarla (herkese açık)
+// GET /products — bugün aktif listeler, güncel fiyatlarla (herkese açık)
 router.get('/', async (req, res) => {
   try {
     const now = new Date();
@@ -15,8 +16,6 @@ router.get('/', async (req, res) => {
 
     const products = await Product.find(filter).sort({ expiresAt: 1 });
     refreshPrices(products);
-
-    // Fiyat değişikliği varsa toplu kaydet
     await Promise.all(products.map((p) => p.save()));
 
     res.json(products);
@@ -25,7 +24,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// GET /products/admin — tüm ürünler (çalışan/admin)
+// GET /products/admin — tüm listeler (çalışan/admin)
 router.get('/admin', verifyToken, requireRole('employee', 'admin'), async (req, res) => {
   try {
     const products = await Product.find().sort({ createdAt: -1 });
@@ -36,19 +35,38 @@ router.get('/admin', verifyToken, requireRole('employee', 'admin'), async (req, 
   }
 });
 
-// POST /products — yeni ürün (çalışan/admin)
+// POST /products — çalışan menü öğesinden günlük listeleme oluşturur
 router.post('/', verifyToken, requireRole('employee', 'admin'), async (req, res) => {
   try {
-    const { name, category, description, imageUrl, basePrice, totalPortions, salesDurationHours } = req.body;
-    const listedAt = new Date();
-    const expiresAt = new Date(listedAt.getTime() + salesDurationHours * 3600000);
+    const { menuItemId, totalPortions } = req.body;
+    if (!menuItemId || !totalPortions) {
+      return res.status(400).json({ message: 'menuItemId ve totalPortions gerekli' });
+    }
+
+    const menuItem = await MenuItem.findById(menuItemId);
+    if (!menuItem) return res.status(404).json({ message: 'Menü öğesi bulunamadı' });
+
+    // Kapanış saati: bugün 22:00
+    const closeAt = new Date();
+    closeAt.setHours(22, 0, 0, 0);
+
+    if (new Date() >= closeAt) {
+      return res.status(400).json({ message: "Bugünkü satış saati sona erdi (22:00). Yarın tekrar deneyin." });
+    }
 
     const product = new Product({
-      name, category, description, imageUrl,
-      basePrice, currentPrice: basePrice,
-      totalPortions, remainingPortions: totalPortions,
-      salesDurationHours, listedAt, expiresAt,
-      addedBy: req.user._id,
+      name:              menuItem.name,
+      category:          menuItem.category,
+      description:       menuItem.description,
+      imageUrl:          menuItem.imageUrl,
+      basePrice:         menuItem.basePrice,
+      currentPrice:      menuItem.basePrice,
+      menuItemId:        menuItem._id,
+      totalPortions:     Number(totalPortions),
+      remainingPortions: Number(totalPortions),
+      listedAt:          new Date(),
+      expiresAt:         closeAt,
+      addedBy:           req.user._id,
     });
 
     product.calculateCurrentPrice();
@@ -59,7 +77,7 @@ router.post('/', verifyToken, requireRole('employee', 'admin'), async (req, res)
   }
 });
 
-// PATCH /products/:id — güncelle (çalışan/admin)
+// PATCH /products/:id — stok düzelt / yayından kaldır (çalışan/admin)
 router.patch('/:id', verifyToken, requireRole('employee', 'admin'), async (req, res) => {
   try {
     const product = await Product.findByIdAndUpdate(req.params.id, req.body, { new: true, runValidators: true });

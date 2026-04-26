@@ -102,4 +102,33 @@ router.post(
   }
 );
 
+// GET /auth/me — mevcut kullanıcı bilgisi
+router.get('/me', verifyToken, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).select('-password');
+    if (!user) return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
+    res.json(user.toPublic());
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+// PATCH /auth/me — profil güncelle
+router.patch('/me', verifyToken, async (req, res) => {
+  try {
+    const { firstName, lastName, password } = req.body;
+    const user = await User.findById(req.user._id);
+    if (!user) return res.status(404).json({ message: 'Kullanıcı bulunamadı' });
+
+    if (firstName) user.firstName = firstName;
+    if (lastName)  user.lastName  = lastName;
+    if (password && password.length >= 6) user.password = password;
+
+    await user.save();
+    res.json(user.toPublic());
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 module.exports = router;

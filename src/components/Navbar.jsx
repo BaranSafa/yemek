@@ -74,7 +74,10 @@ export default function Navbar() {
                   </div>
 
                   {user.role === 'customer' && (
-                    <Link to="/orders" style={styles.dropdownItem}>📦 {t('nav.orders')}</Link>
+                    <>
+                      <Link to="/profile" style={styles.dropdownItem}>👤 {t('nav.profile')}</Link>
+                      <Link to="/orders" style={styles.dropdownItem}>📦 {t('nav.orders')}</Link>
+                    </>
                   )}
 
                   {(user.role === 'employee' || user.role === 'admin') && (
@@ -90,6 +93,7 @@ export default function Navbar() {
                     <>
                       <div style={styles.dropdownDivider} />
                       <Link to="/admin" style={styles.dropdownItem}>👑 {t('nav.adminPanel')}</Link>
+                      <Link to="/admin/menu" style={styles.dropdownItem}>🍽️ {t('nav.menu')}</Link>
                       <Link to="/admin/categories" style={styles.dropdownItem}>🏷️ {t('nav.categories')}</Link>
                       <Link to="/admin/users" style={styles.dropdownItem}>👥 {t('nav.users')}</Link>
                     </>

@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
-import { productAPI, categoryAPI } from '../../utils/api';
+import { productAPI, categoryAPI, menuItemAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
-// ── Stepper indicator ──────────────────────────────────────────────────────
+// ── Stepper ────────────────────────────────────────────────────────────────
 function StepBar({ step }) {
-  const steps = ['Kategori Seç', 'Ürün Bilgileri', 'Stok & Onayla'];
+  const steps = ['Kategori Seç', 'Ürün Seç', 'Stok & Onayla'];
   return (
     <div style={stepBar}>
       {steps.map((label, i) => {
@@ -13,11 +13,7 @@ function StepBar({ step }) {
         const active = step === idx;
         return (
           <div key={label} style={stepItem}>
-            <div style={{
-              ...stepCircle,
-              background: done ? 'var(--success)' : active ? 'var(--terracotta)' : 'var(--border)',
-              color: done || active ? 'white' : 'var(--text-muted)',
-            }}>
+            <div style={{ ...stepCircle, background: done ? 'var(--success)' : active ? 'var(--terracotta)' : 'var(--border)', color: done || active ? 'white' : 'var(--text-muted)' }}>
               {done ? '✓' : idx}
             </div>
             <span style={{ fontSize: '0.78rem', fontWeight: active ? 700 : 500, color: active ? 'var(--terracotta)' : done ? 'var(--success)' : 'var(--text-muted)' }}>
@@ -31,272 +27,179 @@ function StepBar({ step }) {
   );
 }
 
-// ── Step 1: Category selection ─────────────────────────────────────────────
+// ── Step 1: Category ───────────────────────────────────────────────────────
 function StepCategory({ categories, selected, onSelect, onNext, onCancel }) {
   return (
     <div>
       <h3 style={stepTitle}>Kategori Seçin</h3>
-      <p style={stepSubtitle}>Ürününüz hangi kategoriye ait?</p>
-
+      <p style={stepSubtitle}>Hangi kategoriden ürün ekleyeceksiniz?</p>
       {categories.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)' }}>
           <div style={{ fontSize: 40, marginBottom: 8 }}>⚠️</div>
-          <p>Henüz kategori yok. Önce Admin panelinden kategori ekleyin.</p>
+          <p>Henüz kategori yok. Admin panelinden kategori ekleyin.</p>
         </div>
       ) : (
         <div style={catGrid}>
           {categories.map((cat) => (
-            <button
-              key={cat._id}
-              type="button"
-              onClick={() => onSelect(cat)}
-              style={{
-                ...catCard,
-                borderColor: selected?._id === cat._id ? 'var(--terracotta)' : 'var(--border)',
-                background: selected?._id === cat._id ? '#fff3ef' : 'var(--cream)',
-                transform: selected?._id === cat._id ? 'translateY(-2px)' : 'none',
-                boxShadow: selected?._id === cat._id ? 'var(--shadow-md)' : 'none',
-              }}
-            >
+            <button key={cat._id} type="button" onClick={() => onSelect(cat)} style={{ ...catCard, borderColor: selected?._id === cat._id ? 'var(--terracotta)' : 'var(--border)', background: selected?._id === cat._id ? '#fff3ef' : 'var(--cream)' }}>
               <div style={catImgWrap}>
-                {cat.imageUrl ? (
-                  <img src={cat.imageUrl} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none'; }} />
-                ) : (
-                  <span style={{ fontSize: 40 }}>{cat.emoji || '🍽️'}</span>
-                )}
+                {cat.imageUrl
+                  ? <img src={cat.imageUrl} alt={cat.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none'; }} />
+                  : <span style={{ fontSize: 36 }}>{cat.emoji || '🍽️'}</span>}
               </div>
-              <div style={{ fontWeight: 700, fontSize: '0.95rem', color: selected?._id === cat._id ? 'var(--terracotta)' : 'var(--charcoal)' }}>
-                {cat.name}
+              <div style={{ fontWeight: 700, fontSize: '0.9rem', color: selected?._id === cat._id ? 'var(--terracotta)' : 'var(--charcoal)' }}>{cat.name}</div>
+              {selected?._id === cat._id && <div style={{ fontSize: '0.72rem', color: 'var(--terracotta)', fontWeight: 700 }}>✓ Seçildi</div>}
+            </button>
+          ))}
+        </div>
+      )}
+      <div style={stepFooter}>
+        <button type="button" className="btn btn-ghost" onClick={onCancel}>İptal</button>
+        <button type="button" className="btn btn-primary" disabled={!selected} onClick={onNext} style={{ minWidth: 140 }}>Devam Et →</button>
+      </div>
+    </div>
+  );
+}
+
+// ── Step 2: Menu Item Select ───────────────────────────────────────────────
+function StepMenuItem({ menuItems, selected, onSelect, selectedCategory, onNext, onBack, loading }) {
+  const filtered = menuItems.filter((m) => m.category === selectedCategory.name);
+  return (
+    <div>
+      <div style={catBadge}>
+        <span style={{ fontSize: 20 }}>{selectedCategory.emoji || '🍽️'}</span>
+        <span style={{ fontWeight: 600 }}>{selectedCategory.name}</span>
+      </div>
+      <h3 style={stepTitle}>Ürün Seçin</h3>
+      <p style={stepSubtitle}>Bu kategoride menüye eklenmiş ürünlerden birini seçin.</p>
+
+      {loading ? <div className="spinner" /> : filtered.length === 0 ? (
+        <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-muted)' }}>
+          <div style={{ fontSize: 40, marginBottom: 8 }}>🍽️</div>
+          <p>Bu kategoride henüz menü ürünü yok.</p>
+          <p style={{ fontSize: '0.82rem', marginTop: 4 }}>Admin panelinden "Menü Yönetimi" bölümüne gidin.</p>
+        </div>
+      ) : (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginBottom: 8 }}>
+          {filtered.map((item) => (
+            <button key={item._id} type="button" onClick={() => onSelect(item)}
+              style={{ ...menuItemRow, borderColor: selected?._id === item._id ? 'var(--terracotta)' : 'var(--border)', background: selected?._id === item._id ? '#fff3ef' : 'var(--cream)' }}>
+              <div style={menuItemImg}>
+                {item.imageUrl
+                  ? <img src={item.imageUrl} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none'; }} />
+                  : <span style={{ fontSize: 28 }}>{selectedCategory.emoji || '🍽️'}</span>}
               </div>
-              {cat.description && (
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 2 }}>{cat.description}</div>
-              )}
-              {selected?._id === cat._id && (
-                <div style={{ fontSize: '0.75rem', color: 'var(--terracotta)', fontWeight: 700, marginTop: 4 }}>✓ Seçildi</div>
-              )}
+              <div style={{ flex: 1, textAlign: 'left' }}>
+                <div style={{ fontWeight: 700 }}>{item.name}</div>
+                {item.description && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>{item.description}</div>}
+              </div>
+              <div style={{ fontWeight: 700, color: selected?._id === item._id ? 'var(--terracotta)' : 'var(--charcoal)', fontSize: '1rem', whiteSpace: 'nowrap' }}>
+                ₺{Number(item.basePrice).toFixed(2)}
+              </div>
+              {selected?._id === item._id && <span style={{ color: 'var(--terracotta)', fontWeight: 700 }}>✓</span>}
             </button>
           ))}
         </div>
       )}
 
       <div style={stepFooter}>
-        <button type="button" className="btn btn-ghost" onClick={onCancel}>İptal</button>
-        <button
-          type="button"
-          className="btn btn-primary"
-          disabled={!selected}
-          onClick={onNext}
-          style={{ minWidth: 140 }}
-        >
-          Devam Et →
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// ── Step 2: Product details ────────────────────────────────────────────────
-function StepDetails({ form, onChange, selectedCategory, onNext, onBack }) {
-  return (
-    <div>
-      <div style={selectedCatBadge}>
-        <span style={{ fontSize: 20 }}>{selectedCategory.emoji || '🍽️'}</span>
-        <span style={{ fontWeight: 600 }}>{selectedCategory.name}</span>
-      </div>
-
-      <h3 style={stepTitle}>Ürün Bilgileri</h3>
-      <p style={stepSubtitle}>Ürünün adı, açıklaması ve fiyatını girin.</p>
-
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-        <div className="form-group">
-          <label className="form-label">Ürün Adı *</label>
-          <input
-            name="name"
-            className="form-input"
-            placeholder="ör. Mercimek Çorbası"
-            value={form.name}
-            onChange={onChange}
-            required
-            autoFocus
-          />
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">Açıklama (opsiyonel)</label>
-          <textarea
-            name="description"
-            className="form-input"
-            placeholder="Ürün hakkında kısa bir açıklama..."
-            value={form.description}
-            onChange={onChange}
-            rows={2}
-            style={{ resize: 'vertical' }}
-          />
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-          <div className="form-group">
-            <label className="form-label">Taban Fiyat (₺) *</label>
-            <input
-              name="basePrice"
-              type="number"
-              min="0"
-              step="0.01"
-              className="form-input"
-              placeholder="45.00"
-              value={form.basePrice}
-              onChange={onChange}
-              required
-            />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Satış Süresi (Saat) *</label>
-            <input
-              name="salesDurationHours"
-              type="number"
-              min="0.5"
-              step="0.5"
-              className="form-input"
-              placeholder="4"
-              value={form.salesDurationHours}
-              onChange={onChange}
-              required
-            />
-          </div>
-        </div>
-
-        <div className="form-group">
-          <label className="form-label">Görsel URL (opsiyonel)</label>
-          <input
-            name="imageUrl"
-            className="form-input"
-            placeholder="https://example.com/food.jpg"
-            value={form.imageUrl}
-            onChange={onChange}
-          />
-          {form.imageUrl && (
-            <div style={{ marginTop: 8, borderRadius: 'var(--radius-sm)', overflow: 'hidden', height: 100, background: 'var(--cream)' }}>
-              <img src={form.imageUrl} alt="Önizleme" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={(e) => { e.target.style.display = 'none'; }} />
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div style={stepFooter}>
         <button type="button" className="btn btn-ghost" onClick={onBack}>← Geri</button>
-        <button
-          type="button"
-          className="btn btn-primary"
-          disabled={!form.name.trim() || !form.basePrice || !form.salesDurationHours}
-          onClick={onNext}
-          style={{ minWidth: 140 }}
-        >
-          Devam Et →
-        </button>
+        <button type="button" className="btn btn-primary" disabled={!selected} onClick={onNext} style={{ minWidth: 140 }}>Devam Et →</button>
       </div>
     </div>
   );
 }
 
 // ── Step 3: Stock & Confirm ────────────────────────────────────────────────
-function StepStock({ form, onChange, selectedCategory, onBack, onConfirm, saving }) {
-  const price = Number(form.basePrice);
+function StepStock({ selectedMenuItem, selectedCategory, totalPortions, onChange, onBack, onConfirm, saving }) {
+  const now = new Date();
+  const closeAt = new Date();
+  closeAt.setHours(22, 0, 0, 0);
+  const hoursLeft = Math.max(0, (closeAt - now) / 3600000);
+
   const pricingTiers = [
-    { label: 'İlk %60 süre', rate: 0 },
-    { label: '%40–60 kalan', rate: 10 },
-    { label: '%20–40 kalan', rate: 25 },
-    { label: '%10–20 kalan', rate: 40 },
-    { label: 'Son %10', rate: 55 },
+    { label: '> 6 saat kala', hours: '>6', rate: 0 },
+    { label: '4–6 saat kala', hours: '4-6', rate: 10 },
+    { label: '2–4 saat kala', hours: '2-4', rate: 25 },
+    { label: '1–2 saat kala', hours: '1-2', rate: 40 },
+    { label: '< 1 saat kala', hours: '<1', rate: 55 },
   ];
+
+  const currentRate = hoursLeft > 6 ? 0 : hoursLeft > 4 ? 10 : hoursLeft > 2 ? 25 : hoursLeft > 1 ? 40 : 55;
+  const price = Number(selectedMenuItem.basePrice);
 
   return (
     <div>
-      <div style={selectedCatBadge}>
+      <div style={catBadge}>
         <span style={{ fontSize: 20 }}>{selectedCategory.emoji || '🍽️'}</span>
         <span style={{ fontWeight: 600 }}>{selectedCategory.name}</span>
         <span style={{ color: 'var(--text-muted)' }}>·</span>
-        <span style={{ fontWeight: 600 }}>{form.name}</span>
+        <span style={{ fontWeight: 600 }}>{selectedMenuItem.name}</span>
       </div>
 
-      <h3 style={stepTitle}>Stok & Onayla</h3>
-      <p style={stepSubtitle}>Kaç porsiyon satışa çıkaracaksınız?</p>
+      <h3 style={stepTitle}>Stok Miktarı</h3>
+      <p style={stepSubtitle}>Bugün kaç porsiyon satışa çıkarmak istiyorsunuz?</p>
 
-      <div className="form-group" style={{ marginBottom: 24 }}>
-        <label className="form-label">Toplam Porsiyon Sayısı *</label>
+      <div className="form-group" style={{ marginBottom: 20 }}>
         <input
-          name="totalPortions"
-          type="number"
-          min="1"
-          className="form-input"
+          type="number" min="1" className="form-input"
           placeholder="ör. 20"
-          value={form.totalPortions}
-          onChange={onChange}
-          required
+          value={totalPortions}
+          onChange={(e) => onChange(e.target.value)}
           autoFocus
-          style={{ fontSize: '1.5rem', fontWeight: 700, textAlign: 'center', letterSpacing: '0.1em' }}
+          style={{ fontSize: '1.8rem', fontWeight: 700, textAlign: 'center', letterSpacing: '0.1em' }}
         />
-        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 6 }}>
-          Bu sayı kadar porsiyon müşterilere sunulacak.
-        </p>
+      </div>
+
+      {/* 22:00 info */}
+      <div style={{ background: '#fff8e1', border: '1px solid var(--gold)', borderRadius: 'var(--radius-sm)', padding: '10px 16px', marginBottom: 16, fontSize: '0.85rem', color: '#8a6010', display: 'flex', alignItems: 'center', gap: 8 }}>
+        <span>⏰</span>
+        <span>Tüm ürünler bugün <strong>22:00'de</strong> kapanır. Şu an <strong>{Math.floor(hoursLeft)}s {Math.round((hoursLeft % 1) * 60)}dk</strong> kaldı.</span>
       </div>
 
       {/* Pricing preview */}
       {price > 0 && (
         <div style={pricingBox}>
-          <div style={{ fontWeight: 700, marginBottom: 12, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span>📊</span> Dinamik Fiyatlandırma Önizleme
-          </div>
-          {pricingTiers.map((tier) => (
-            <div key={tier.rate} style={pricingRow}>
-              <span style={{ color: 'var(--text-muted)', fontSize: '0.82rem' }}>{tier.label}</span>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                {tier.rate > 0 && (
-                  <span style={discountTag}>-%{tier.rate}</span>
-                )}
-                <span style={{ fontWeight: 700, color: tier.rate > 0 ? 'var(--terracotta)' : 'var(--charcoal)', fontSize: '0.9rem' }}>
-                  ₺{(price * (1 - tier.rate / 100)).toFixed(2)}
+          <div style={{ fontWeight: 700, marginBottom: 10, fontSize: '0.88rem' }}>📊 Otomatik İndirim Takvimi</div>
+          {pricingTiers.map((tier) => {
+            const isCurrent = tier.rate === currentRate;
+            return (
+              <div key={tier.rate} style={{ ...pricingRow, background: isCurrent ? '#fff3ef' : 'transparent', borderRadius: 6, padding: '4px 8px' }}>
+                <span style={{ color: isCurrent ? 'var(--terracotta)' : 'var(--text-muted)', fontSize: '0.82rem', fontWeight: isCurrent ? 700 : 400 }}>
+                  {isCurrent ? '▶ ' : ''}{tier.label}
                 </span>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  {tier.rate > 0 && <span style={discountTag}>-%{tier.rate}</span>}
+                  <span style={{ fontWeight: 700, color: isCurrent ? 'var(--terracotta)' : 'var(--charcoal)', fontSize: '0.88rem' }}>
+                    ₺{(price * (1 - tier.rate / 100)).toFixed(2)}
+                  </span>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
-      {/* Summary card */}
+      {/* Summary */}
       <div style={summaryCard}>
-        <div style={summaryRow}>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Kategori</span>
-          <span style={{ fontWeight: 600 }}>{selectedCategory.name}</span>
-        </div>
-        <div style={summaryRow}>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Ürün</span>
-          <span style={{ fontWeight: 600 }}>{form.name}</span>
-        </div>
-        <div style={summaryRow}>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Taban fiyat</span>
-          <span style={{ fontWeight: 600 }}>₺{Number(form.basePrice).toFixed(2)}</span>
-        </div>
-        <div style={summaryRow}>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Satış süresi</span>
-          <span style={{ fontWeight: 600 }}>{form.salesDurationHours} saat</span>
-        </div>
-        <div style={summaryRow}>
-          <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Porsiyon</span>
-          <span style={{ fontWeight: 700, color: form.totalPortions ? 'var(--terracotta)' : 'var(--text-muted)' }}>
-            {form.totalPortions || '—'} adet
-          </span>
-        </div>
+        {[
+          ['Kategori', selectedCategory.name],
+          ['Ürün', selectedMenuItem.name],
+          ['Taban Fiyat', `₺${price.toFixed(2)}`],
+          ['Şu anki fiyat', `₺${(price * (1 - currentRate / 100)).toFixed(2)} (-%${currentRate})`],
+          ['Porsiyon', totalPortions ? `${totalPortions} adet` : '—'],
+          ['Kapanış', 'Bugün 22:00'],
+        ].map(([label, val]) => (
+          <div key={label} style={summaryRow}>
+            <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{label}</span>
+            <span style={{ fontWeight: 600 }}>{val}</span>
+          </div>
+        ))}
       </div>
 
       <div style={stepFooter}>
         <button type="button" className="btn btn-ghost" onClick={onBack}>← Geri</button>
-        <button
-          type="button"
-          className="btn btn-success btn-lg"
-          disabled={!form.totalPortions || saving}
-          onClick={onConfirm}
-          style={{ minWidth: 160, justifyContent: 'center' }}
-        >
+        <button type="button" className="btn btn-success btn-lg" disabled={!totalPortions || saving} onClick={onConfirm} style={{ minWidth: 160, justifyContent: 'center' }}>
           {saving ? 'Ekleniyor...' : '✅ Satışa Çıkar'}
         </button>
       </div>
@@ -304,24 +207,24 @@ function StepStock({ form, onChange, selectedCategory, onBack, onConfirm, saving
   );
 }
 
-// ── Main page ──────────────────────────────────────────────────────────────
-const EMPTY_FORM = { name: '', description: '', basePrice: '', salesDurationHours: '', totalPortions: '', imageUrl: '' };
-
+// ── Main ───────────────────────────────────────────────────────────────────
 export default function ProductManagePage() {
-  const [products, setProducts] = useState([]);
-  const [categories, setCategories] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showWizard, setShowWizard] = useState(false);
-  const [step, setStep] = useState(1);
+  const [products, setProducts]       = useState([]);
+  const [categories, setCategories]   = useState([]);
+  const [menuItems, setMenuItems]     = useState([]);
+  const [loading, setLoading]         = useState(true);
+  const [menuLoading, setMenuLoading] = useState(false);
+  const [showWizard, setShowWizard]   = useState(false);
+  const [step, setStep]               = useState(1);
   const [selectedCategory, setSelectedCategory] = useState(null);
-  const [form, setForm] = useState(EMPTY_FORM);
-  const [saving, setSaving] = useState(false);
+  const [selectedMenuItem, setSelectedMenuItem] = useState(null);
+  const [totalPortions, setTotalPortions] = useState('');
+  const [saving, setSaving]           = useState(false);
 
-  // Edit mode (direct modal, no wizard)
+  // Edit modal
   const [editProduct, setEditProduct] = useState(null);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editForm, setEditForm] = useState({});
-  const [editSaving, setEditSaving] = useState(false);
+  const [editPortions, setEditPortions] = useState('');
+  const [editSaving, setEditSaving]   = useState(false);
 
   const fetchAll = async () => {
     try {
@@ -334,86 +237,60 @@ export default function ProductManagePage() {
 
   useEffect(() => { fetchAll(); }, []);
 
-  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
-
-  const openWizard = () => {
-    setForm(EMPTY_FORM);
+  const openWizard = async () => {
     setSelectedCategory(null);
+    setSelectedMenuItem(null);
+    setTotalPortions('');
     setStep(1);
     setShowWizard(true);
+
+    if (menuItems.length === 0) {
+      setMenuLoading(true);
+      try {
+        const res = await menuItemAPI.getAll();
+        setMenuItems(Array.isArray(res.data) ? res.data : []);
+      } catch { toast.error('Menü yüklenemedi'); }
+      finally { setMenuLoading(false); }
+    }
   };
 
   const handleConfirm = async () => {
     setSaving(true);
     try {
-      await productAPI.create({
-        name: form.name,
-        category: selectedCategory.name,
-        categoryId: selectedCategory._id,
-        description: form.description,
-        imageUrl: form.imageUrl,
-        basePrice: Number(form.basePrice),
-        totalPortions: Number(form.totalPortions),
-        salesDurationHours: Number(form.salesDurationHours),
-      });
-      toast.success(`🎉 "${form.name}" satışa çıkarıldı!`);
+      await productAPI.create({ menuItemId: selectedMenuItem._id, totalPortions: Number(totalPortions) });
+      toast.success(`🎉 "${selectedMenuItem.name}" satışa çıkarıldı!`);
       setShowWizard(false);
       fetchAll();
     } catch (err) {
       toast.error(err.response?.data?.message || 'Hata oluştu');
-    } finally {
-      setSaving(false);
-    }
+    } finally { setSaving(false); }
   };
 
-  const openEdit = (p) => {
-    setEditProduct(p);
-    setEditForm({
-      name: p.name,
-      description: p.description || '',
-      remainingPortions: p.remainingPortions,
-      salesDurationHours: p.salesDurationHours,
-      imageUrl: p.imageUrl || '',
-    });
-    setShowEditModal(true);
-  };
-
+  const openEdit = (p) => { setEditProduct(p); setEditPortions(String(p.remainingPortions)); };
   const handleEditSave = async (e) => {
     e.preventDefault();
     setEditSaving(true);
     try {
-      await productAPI.update(editProduct._id, {
-        name: editForm.name,
-        description: editForm.description,
-        remainingPortions: Number(editForm.remainingPortions),
-        salesDurationHours: Number(editForm.salesDurationHours),
-        imageUrl: editForm.imageUrl,
-      });
-      toast.success('Ürün güncellendi');
-      setShowEditModal(false);
+      await productAPI.update(editProduct._id, { remainingPortions: Number(editPortions) });
+      toast.success('Stok güncellendi');
+      setEditProduct(null);
       fetchAll();
-    } catch (err) {
-      toast.error(err.response?.data?.message || 'Hata');
-    } finally {
-      setEditSaving(false); }
+    } catch { toast.error('Hata'); }
+    finally { setEditSaving(false); }
+  };
+  const handleToggle = async (p) => {
+    try {
+      await productAPI.update(p._id, { isActive: !p.isActive });
+      toast.success(p.isActive ? 'Yayından kaldırıldı' : 'Yeniden yayınlandı');
+      fetchAll();
+    } catch { toast.error('Hata'); }
   };
 
-  const handleDeactivate = async (id) => {
-    if (!confirm('Bu ürünü yayından kaldırmak istiyor musunuz?')) return;
-    try { await productAPI.delete(id); toast.success('Ürün kaldırıldı'); fetchAll(); }
-    catch { toast.error('Hata'); }
+  const minutesUntilClose = () => {
+    const close = new Date(); close.setHours(22, 0, 0, 0);
+    return Math.max(0, Math.round((close - new Date()) / 60000));
   };
-
-  const handleReactivate = async (id) => {
-    try { await productAPI.update(id, { isActive: true }); toast.success('Ürün yeniden yayınlandı'); fetchAll(); }
-    catch { toast.error('Hata'); }
-  };
-
-  const formatTime = (mins) => {
-    if (!mins || mins <= 0) return 'Süresi doldu';
-    const h = Math.floor(mins / 60), m = mins % 60;
-    return h > 0 ? `${h}s ${m}dk` : `${m}dk`;
-  };
+  const formatMins = (m) => { if (m <= 0) return 'Kapandı'; const h = Math.floor(m / 60); const min = m % 60; return h ? `${h}s ${min}dk` : `${min}dk`; };
 
   return (
     <div style={page}>
@@ -421,84 +298,48 @@ export default function ProductManagePage() {
         <div style={headerRow}>
           <div>
             <h1 style={pageTitle}>🍜 Ürün Yönetimi</h1>
-            <p style={{ color: 'var(--text-muted)', marginTop: 4, fontSize: '0.9rem' }}>
-              {products.length} ürün listelendi
-            </p>
+            <p style={{ color: 'var(--text-muted)', marginTop: 4, fontSize: '0.9rem' }}>{products.length} ürün listelendi • Kapanış: 22:00</p>
           </div>
-          <button className="btn btn-primary btn-lg" onClick={openWizard} style={{ justifyContent: 'center' }}>
-            + Yeni Ürün Ekle
-          </button>
+          <button className="btn btn-primary btn-lg" onClick={openWizard} style={{ justifyContent: 'center' }}>+ Ürün Ekle</button>
         </div>
 
-        {/* ── Wizard overlay ── */}
+        {/* Wizard */}
         {showWizard && (
           <div style={overlay} onClick={() => setShowWizard(false)}>
             <div style={wizardModal} onClick={(e) => e.stopPropagation()}>
               <StepBar step={step} />
               <div style={{ marginTop: 24 }}>
                 {step === 1 && (
-                  <StepCategory
-                    categories={categories}
-                    selected={selectedCategory}
-                    onSelect={setSelectedCategory}
-                    onNext={() => setStep(2)}
-                    onCancel={() => setShowWizard(false)}
-                  />
+                  <StepCategory categories={categories} selected={selectedCategory} onSelect={setSelectedCategory}
+                    onNext={() => setStep(2)} onCancel={() => setShowWizard(false)} />
                 )}
                 {step === 2 && (
-                  <StepDetails
-                    form={form}
-                    onChange={handleChange}
-                    selectedCategory={selectedCategory}
-                    onNext={() => setStep(3)}
-                    onBack={() => setStep(1)}
-                  />
+                  <StepMenuItem menuItems={menuItems} selected={selectedMenuItem} onSelect={setSelectedMenuItem}
+                    selectedCategory={selectedCategory} onNext={() => setStep(3)} onBack={() => setStep(1)} loading={menuLoading} />
                 )}
                 {step === 3 && (
-                  <StepStock
-                    form={form}
-                    onChange={handleChange}
-                    selectedCategory={selectedCategory}
-                    onBack={() => setStep(2)}
-                    onConfirm={handleConfirm}
-                    saving={saving}
-                  />
+                  <StepStock selectedMenuItem={selectedMenuItem} selectedCategory={selectedCategory}
+                    totalPortions={totalPortions} onChange={setTotalPortions}
+                    onBack={() => setStep(2)} onConfirm={handleConfirm} saving={saving} />
                 )}
               </div>
             </div>
           </div>
         )}
 
-        {/* ── Edit modal ── */}
-        {showEditModal && (
-          <div style={overlay} onClick={() => setShowEditModal(false)}>
+        {/* Edit modal */}
+        {editProduct && (
+          <div style={overlay} onClick={() => setEditProduct(null)}>
             <div style={editModal} onClick={(e) => e.stopPropagation()}>
-              <h2 style={{ fontFamily: "'Playfair Display', serif", marginBottom: 20 }}>✏️ Ürün Düzenle</h2>
+              <h2 style={{ fontFamily: "'Playfair Display', serif", marginBottom: 20 }}>✏️ Stok Güncelle</h2>
+              <p style={{ color: 'var(--text-muted)', marginBottom: 16, fontSize: '0.9rem' }}>{editProduct.name}</p>
               <form onSubmit={handleEditSave} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                 <div className="form-group">
-                  <label className="form-label">Ürün Adı</label>
-                  <input className="form-input" value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} required />
+                  <label className="form-label">Kalan Porsiyon</label>
+                  <input type="number" min="0" className="form-input" value={editPortions} onChange={(e) => setEditPortions(e.target.value)} required style={{ fontSize: '1.4rem', textAlign: 'center', fontWeight: 700 }} />
                 </div>
-                <div className="form-group">
-                  <label className="form-label">Açıklama</label>
-                  <textarea className="form-input" value={editForm.description} onChange={(e) => setEditForm({ ...editForm, description: e.target.value })} rows={2} style={{ resize: 'vertical' }} />
-                </div>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  <div className="form-group">
-                    <label className="form-label">Kalan Porsiyon</label>
-                    <input type="number" min="0" className="form-input" value={editForm.remainingPortions} onChange={(e) => setEditForm({ ...editForm, remainingPortions: e.target.value })} required />
-                  </div>
-                  <div className="form-group">
-                    <label className="form-label">Satış Süresi (Saat)</label>
-                    <input type="number" min="0.5" step="0.5" className="form-input" value={editForm.salesDurationHours} onChange={(e) => setEditForm({ ...editForm, salesDurationHours: e.target.value })} required />
-                  </div>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Görsel URL</label>
-                  <input className="form-input" value={editForm.imageUrl} onChange={(e) => setEditForm({ ...editForm, imageUrl: e.target.value })} />
-                </div>
-                <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-                  <button type="button" className="btn btn-ghost" onClick={() => setShowEditModal(false)} style={{ flex: 1, justifyContent: 'center' }}>İptal</button>
+                <div style={{ display: 'flex', gap: 12 }}>
+                  <button type="button" className="btn btn-ghost" onClick={() => setEditProduct(null)} style={{ flex: 1, justifyContent: 'center' }}>İptal</button>
                   <button type="submit" className="btn btn-primary" disabled={editSaving} style={{ flex: 1, justifyContent: 'center' }}>
                     {editSaving ? 'Kaydediliyor...' : 'Güncelle'}
                   </button>
@@ -508,45 +349,48 @@ export default function ProductManagePage() {
           </div>
         )}
 
-        {/* ── Product list ── */}
+        {/* Product list */}
         {loading ? <div className="spinner" /> : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             {products.length === 0 && (
               <div style={{ textAlign: 'center', padding: '48px 0', color: 'var(--text-muted)' }}>
                 <div style={{ fontSize: 48, marginBottom: 12 }}>🍜</div>
-                <p>Henüz ürün eklenmemiş.</p>
+                <p>Bugün henüz ürün eklenmemiş.</p>
               </div>
             )}
-            {products.map((p) => (
-              <div key={p._id} style={{ ...productRow, opacity: p.isActive ? 1 : 0.55 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontWeight: 700, fontFamily: "'Playfair Display', serif" }}>{p.name}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>
-                    {p.category} · {p.remainingPortions}/{p.totalPortions} porsiyon
-                  </div>
-                  {!p.isActive && <span className="badge badge-danger" style={{ marginTop: 4 }}>Yayında Değil</span>}
-                </div>
-                <div style={{ textAlign: 'center', minWidth: 90 }}>
-                  <div style={{ fontWeight: 700, color: 'var(--terracotta)' }}>₺{p.currentPrice?.toFixed(2)}</div>
-                  {p.discountRate > 0 && (
-                    <>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textDecoration: 'line-through' }}>₺{p.basePrice?.toFixed(2)}</div>
-                      <span className="badge badge-discount">-%{p.discountRate}</span>
-                    </>
+            {products.map((p) => {
+              const minsLeft = minutesUntilClose();
+              return (
+                <div key={p._id} style={{ ...productRow, opacity: p.isActive ? 1 : 0.5 }}>
+                  {p.imageUrl && (
+                    <img src={p.imageUrl} alt={p.name} style={{ width: 56, height: 56, borderRadius: 'var(--radius-sm)', objectFit: 'cover', flexShrink: 0 }} onError={(e) => { e.target.style.display = 'none'; }} />
                   )}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontWeight: 700, fontFamily: "'Playfair Display', serif" }}>{p.name}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: 2 }}>
+                      {p.category} · {p.remainingPortions}/{p.totalPortions} porsiyon
+                    </div>
+                    {!p.isActive && <span className="badge badge-danger" style={{ marginTop: 4 }}>Yayında Değil</span>}
+                  </div>
+                  <div style={{ textAlign: 'center', minWidth: 90 }}>
+                    <div style={{ fontWeight: 700, color: 'var(--terracotta)' }}>₺{p.currentPrice?.toFixed(2)}</div>
+                    {p.discountRate > 0 && (
+                      <><div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', textDecoration: 'line-through' }}>₺{p.basePrice?.toFixed(2)}</div>
+                      <span className="badge badge-discount">-%{p.discountRate}</span></>
+                    )}
+                  </div>
+                  <div style={{ fontSize: '0.82rem', color: minsLeft < 60 ? 'var(--terracotta)' : 'var(--text-muted)', minWidth: 80, textAlign: 'center' }}>
+                    ⏰ {formatMins(minsLeft)}
+                  </div>
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    <button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)}>✏️</button>
+                    <button className={`btn btn-sm ${p.isActive ? 'btn-danger' : 'btn-success'}`} onClick={() => handleToggle(p)}>
+                      {p.isActive ? '🚫' : '✅'}
+                    </button>
+                  </div>
                 </div>
-                <div style={{ textAlign: 'center', fontSize: '0.82rem', minWidth: 80, color: p.remainingMinutes < 60 ? 'var(--terracotta)' : 'var(--text-muted)' }}>
-                  ⏱ {formatTime(p.remainingMinutes)}
-                </div>
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button className="btn btn-ghost btn-sm" onClick={() => openEdit(p)}>✏️ Düzenle</button>
-                  {p.isActive
-                    ? <button className="btn btn-danger btn-sm" onClick={() => handleDeactivate(p._id)}>🚫 Kaldır</button>
-                    : <button className="btn btn-success btn-sm" onClick={() => handleReactivate(p._id)}>✅ Yayınla</button>
-                  }
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
@@ -559,28 +403,24 @@ const page = { paddingTop: 40, paddingBottom: 64, minHeight: 'calc(100vh - 70px)
 const headerRow = { display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 28, flexWrap: 'wrap', gap: 16 };
 const pageTitle = { fontFamily: "'Playfair Display', serif", fontSize: '2rem' };
 const overlay = { position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16 };
-const wizardModal = { background: 'var(--warm-white)', borderRadius: 'var(--radius-lg)', padding: '28px 32px', width: '100%', maxWidth: 600, maxHeight: '90vh', overflowY: 'auto', boxShadow: 'var(--shadow-lg)' };
-const editModal = { background: 'var(--warm-white)', borderRadius: 'var(--radius-lg)', padding: 32, width: '100%', maxWidth: 480, maxHeight: '90vh', overflowY: 'auto', boxShadow: 'var(--shadow-lg)' };
-const productRow = { background: 'var(--warm-white)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 20, boxShadow: 'var(--shadow-sm)', flexWrap: 'wrap' };
-
-// Step styles
-const stepBar = { display: 'flex', alignItems: 'center', gap: 0, paddingBottom: 20, borderBottom: '1px solid var(--border)' };
+const wizardModal = { background: 'var(--warm-white)', borderRadius: 'var(--radius-lg)', padding: '28px 32px', width: '100%', maxWidth: 560, maxHeight: '90vh', overflowY: 'auto', boxShadow: 'var(--shadow-lg)' };
+const editModal = { background: 'var(--warm-white)', borderRadius: 'var(--radius-lg)', padding: 32, width: '100%', maxWidth: 400, boxShadow: 'var(--shadow-lg)' };
+const productRow = { background: 'var(--warm-white)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 16, boxShadow: 'var(--shadow-sm)', flexWrap: 'wrap' };
+const stepBar = { display: 'flex', alignItems: 'center', paddingBottom: 20, borderBottom: '1px solid var(--border)' };
 const stepItem = { display: 'flex', alignItems: 'center', gap: 8, flex: 1 };
 const stepCircle = { width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.8rem', flexShrink: 0 };
 const stepLine = { flex: 1, height: 2, background: 'var(--border)', margin: '0 8px' };
 const stepTitle = { fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', margin: '0 0 4px' };
 const stepSubtitle = { color: 'var(--text-muted)', fontSize: '0.88rem', marginBottom: 20 };
 const stepFooter = { display: 'flex', justifyContent: 'space-between', marginTop: 24, paddingTop: 20, borderTop: '1px solid var(--border)' };
-
-// Category picker
-const catGrid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))', gap: 12, marginBottom: 8 };
-const catCard = { border: '2px solid', borderRadius: 'var(--radius)', padding: '12px 8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, transition: 'all 0.15s', textAlign: 'center' };
-const catImgWrap = { width: 64, height: 64, borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 };
-
-// Step 2 & 3
-const selectedCatBadge = { display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: '999px', padding: '5px 14px', marginBottom: 16, fontSize: '0.88rem' };
-const pricingBox = { background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '14px 16px', marginBottom: 16 };
-const pricingRow = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 };
+const catGrid = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(130px, 1fr))', gap: 10, marginBottom: 8 };
+const catCard = { border: '2px solid', borderRadius: 'var(--radius)', padding: '10px 8px', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, transition: 'all 0.15s', textAlign: 'center' };
+const catImgWrap = { width: 56, height: 56, borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' };
+const catBadge = { display: 'inline-flex', alignItems: 'center', gap: 8, background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: '999px', padding: '5px 14px', marginBottom: 16, fontSize: '0.88rem' };
+const menuItemRow = { border: '2px solid', borderRadius: 'var(--radius)', padding: '12px 14px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 12, transition: 'all 0.15s', textAlign: 'left', width: '100%' };
+const menuItemImg = { width: 52, height: 52, borderRadius: 'var(--radius-sm)', overflow: 'hidden', background: 'var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 };
+const pricingBox = { background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', marginBottom: 14 };
+const pricingRow = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 };
 const discountTag = { background: '#fff0ea', color: 'var(--terracotta)', padding: '2px 8px', borderRadius: '999px', fontSize: '0.72rem', fontWeight: 700 };
-const summaryCard = { background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 8 };
-const summaryRow = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem' };
+const summaryCard = { background: 'var(--cream)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: 6, marginBottom: 8 };
+const summaryRow = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.88rem' };
