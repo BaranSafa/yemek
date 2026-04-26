@@ -1,133 +1,106 @@
 /**
  * Adile Sultan — Veritabanı Seed Scripti
- * Çalıştırmak için: node seed.js
- *
- * Oluşturur:
- *  - 1 Admin kullanıcısı
- *  - 1 Çalışan hesabı
- *  - 1 Test müşterisi
- *  - Birkaç örnek ürün
+ * Çalıştırmak için:
+ *   cd backend && node ../seed.js
  */
 
-require('dotenv').config();
+require('dotenv').config({ path: './backend/.env' });
 const mongoose = require('mongoose');
-const User = require('./models/User');
-const Product = require('./models/Product');
+const User     = require('./backend/models/User');
+const Category = require('./backend/models/Category');
+const Product  = require('./backend/models/Product');
+const Order    = require('./backend/models/Order');
 
-const MONGO_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/adile-sultan';
+const MONGO_URI = process.env.MONGODB_URI;
+if (!MONGO_URI) { console.error('❌ MONGODB_URI bulunamadı'); process.exit(1); }
 
 async function seed() {
   await mongoose.connect(MONGO_URI);
-  console.log('✅ MongoDB bağlandı');
+  console.log('✅ MongoDB bağlandı\n');
 
   // Temizle
-  await User.deleteMany({});
-  await Product.deleteMany({});
+  await Promise.all([
+    User.deleteMany({}),
+    Category.deleteMany({}),
+    Product.deleteMany({}),
+    Order.deleteMany({}),
+  ]);
+  console.log('🧹 Eski veriler silindi');
 
-  // Admin
+  // ── Kullanıcılar ─────────────────────────────────────────────────────────
   const admin = await User.create({
-    firstName: 'Adile',
-    lastName: 'Sultan',
-    phone: '05001234567',
-    password: 'admin123',
-    role: 'admin',
+    firstName: 'Adile', lastName: 'Sultan',
+    phone: '05001234567', password: 'admin123', role: 'admin',
   });
-  console.log('👑 Admin oluşturuldu:', admin.phone, '/ admin123');
+  console.log('👑 Admin    →', admin.phone, '/ admin123');
 
-  // Çalışan
   const employee = await User.create({
-    firstName: 'Mehmet',
-    lastName: 'Şef',
-    phone: '05001234568',
-    password: 'calisan123',
-    role: 'employee',
+    firstName: 'Mehmet', lastName: 'Şef',
+    phone: '05001234568', password: 'calisan123', role: 'employee',
   });
-  console.log('👷 Çalışan oluşturuldu:', employee.phone, '/ calisan123');
+  console.log('👷 Çalışan  →', employee.phone, '/ calisan123');
 
-  // Test müşterisi
   const customer = await User.create({
-    firstName: 'Ayşe',
-    lastName: 'Kaya',
-    phone: '05001234569',
-    password: 'musteri123',
-    role: 'customer',
+    firstName: 'Ayşe', lastName: 'Kaya',
+    phone: '05001234569', password: 'musteri123', role: 'customer',
   });
-  console.log('👤 Müşteri oluşturuldu:', customer.phone, '/ musteri123');
+  console.log('👤 Müşteri  →', customer.phone, '/ musteri123');
 
-  // Örnek ürünler
+  // ── Kategoriler ───────────────────────────────────────────────────────────
+  const categories = await Category.insertMany([
+    { name: 'Çorba',   emoji: '🥣', description: 'Sıcak ve besleyici çorbalar' },
+    { name: 'Yemek',   emoji: '🍛', description: 'Ana yemekler ve etli tarifler' },
+    { name: 'Tatlı',   emoji: '🍮', description: 'Geleneksel Türk tatlıları' },
+    { name: 'İçecek',  emoji: '☕', description: 'Sıcak ve soğuk içecekler' },
+    { name: 'Salata',  emoji: '🥗', description: 'Taze ve hafif salatalar' },
+    { name: 'Kahvaltı',emoji: '🍳', description: 'Sabah kahvaltı çeşitleri' },
+  ]);
+  console.log(`\n📂 ${categories.length} kategori oluşturuldu`);
+
+  // ── Örnek Ürünler ─────────────────────────────────────────────────────────
   const now = new Date();
-  const products = [
+  const productData = [
     {
-      name: 'Mercimek Çorbası',
-      category: 'Çorba',
+      name: 'Mercimek Çorbası', category: 'Çorba',
       description: 'Geleneksel kırmızı mercimek çorbası, naneli ve limonlu',
-      basePrice: 35,
-      totalPortions: 20,
-      remainingPortions: 14,
-      salesDurationHours: 3,
-      listedAt: new Date(now - 1 * 3600000), // 1 saat önce
-      expiresAt: new Date(now + 2 * 3600000), // 2 saat kaldı
-      addedBy: employee._id,
+      basePrice: 35, totalPortions: 20, remainingPortions: 14, salesDurationHours: 3,
+      listedAt: new Date(now - 1 * 3600000), expiresAt: new Date(now + 2 * 3600000),
     },
     {
-      name: 'İzmir Köfte',
-      category: 'Yemek',
+      name: 'İzmir Köfte', category: 'Yemek',
       description: 'Domatesli soslu fırın köfte, pirinç pilavı ile',
-      basePrice: 95,
-      totalPortions: 15,
-      remainingPortions: 8,
-      salesDurationHours: 4,
-      listedAt: new Date(now - 2.5 * 3600000), // 2.5 saat önce
-      expiresAt: new Date(now + 1.5 * 3600000), // 1.5 saat kaldı
-      addedBy: employee._id,
+      basePrice: 95, totalPortions: 15, remainingPortions: 8, salesDurationHours: 4,
+      listedAt: new Date(now - 2.5 * 3600000), expiresAt: new Date(now + 1.5 * 3600000),
     },
     {
-      name: 'Karnıyarık',
-      category: 'Yemek',
+      name: 'Karnıyarık', category: 'Yemek',
       description: 'Kıymalı patlıcan dolması, yoğurt ile servis',
-      basePrice: 85,
-      totalPortions: 12,
-      remainingPortions: 5,
-      salesDurationHours: 5,
-      listedAt: new Date(now - 4 * 3600000), // 4 saat önce
-      expiresAt: new Date(now + 1 * 3600000), // 1 saat kaldı
-      addedBy: employee._id,
+      basePrice: 85, totalPortions: 12, remainingPortions: 5, salesDurationHours: 5,
+      listedAt: new Date(now - 4 * 3600000), expiresAt: new Date(now + 1 * 3600000),
     },
     {
-      name: 'Sütlaç',
-      category: 'Tatlı',
+      name: 'Sütlaç', category: 'Tatlı',
       description: 'Fırınlanmış geleneksel sütlaç',
-      basePrice: 45,
-      totalPortions: 10,
-      remainingPortions: 4,
-      salesDurationHours: 2,
-      listedAt: new Date(now - 1.8 * 3600000),
-      expiresAt: new Date(now + 0.2 * 3600000), // 12 dk kaldı
-      addedBy: employee._id,
+      basePrice: 45, totalPortions: 10, remainingPortions: 4, salesDurationHours: 2,
+      listedAt: new Date(now - 1.8 * 3600000), expiresAt: new Date(now + 0.2 * 3600000),
     },
     {
-      name: 'Türk Kahvesi',
-      category: 'İçecek',
+      name: 'Türk Kahvesi', category: 'İçecek',
       description: 'Geleneksel köpüklü Türk kahvesi, lokum ile',
-      basePrice: 25,
-      totalPortions: 30,
-      remainingPortions: 30,
-      salesDurationHours: 8,
-      listedAt: new Date(),
-      expiresAt: new Date(now + 8 * 3600000),
-      addedBy: employee._id,
+      basePrice: 25, totalPortions: 30, remainingPortions: 30, salesDurationHours: 8,
+      listedAt: new Date(), expiresAt: new Date(now + 8 * 3600000),
     },
   ];
 
-  for (const pData of products) {
-    const p = new Product({ ...pData, currentPrice: pData.basePrice });
+  for (const pData of productData) {
+    const p = new Product({ ...pData, currentPrice: pData.basePrice, addedBy: employee._id });
     p.calculateCurrentPrice();
     await p.save();
-    console.log(`🍜 ${p.name}: ₺${p.basePrice} → ₺${p.currentPrice} (-%${p.discountRate})`);
+    console.log(`  🍜 ${p.name.padEnd(18)} ₺${p.basePrice} → ₺${p.currentPrice} (-%${p.discountRate})`);
   }
 
   console.log('\n✅ Seed tamamlandı!');
-  console.log('\n📋 GİRİŞ BİLGİLERİ:');
+  console.log('─────────────────────────────────');
   console.log('Admin   → 05001234567 / admin123');
   console.log('Çalışan → 05001234568 / calisan123');
   console.log('Müşteri → 05001234569 / musteri123');
@@ -135,4 +108,4 @@ async function seed() {
   await mongoose.disconnect();
 }
 
-seed().catch(console.error);
+seed().catch((err) => { console.error(err); process.exit(1); });
