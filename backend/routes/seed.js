@@ -74,6 +74,25 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET /api/seed/users — eksik kullanıcıları ekler
+router.get('/users', async (req, res) => {
+  try {
+    const defaults = [
+      { firstName: 'Adile',  lastName: 'Sultan', phone: '05001234567', password: 'admin123',    role: 'admin' },
+      { firstName: 'Mehmet', lastName: 'Şef',    phone: '05001234568', password: 'calisan123',  role: 'employee' },
+      { firstName: 'Ayşe',  lastName: 'Kaya',   phone: '05001234569', password: 'musteri123',  role: 'customer' },
+    ];
+    const added = [];
+    for (const u of defaults) {
+      const exists = await User.findOne({ phone: u.phone });
+      if (!exists) { await User.create(u); added.push(u.phone); }
+    }
+    res.json({ message: 'Kullanıcılar kontrol edildi', added: added.length ? added : 'Zaten mevcut' });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // GET /api/seed/categories — sadece kategorileri ekler (yoksa)
 router.get('/categories', async (req, res) => {
   try {
