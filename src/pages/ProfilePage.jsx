@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { authAPI, orderAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
@@ -22,27 +22,26 @@ function fmt(ms) {
 }
 
 function OrderCountdown({ createdAt, onExpired }) {
-  const [tick, setTick] = useState(0);
-  const onExpiredRef    = useRef(onExpired);
-  onExpiredRef.current  = onExpired;
+  const [now, setNow] = useState(() => Date.now());
 
   useEffect(() => {
+    const created = new Date(createdAt).getTime();
     const id = setInterval(() => {
-      const elapsed = Date.now() - new Date(createdAt).getTime();
-      if (elapsed >= TOTAL_MS) {
+      const t = Date.now();
+      setNow(t);
+      if (t - created >= TOTAL_MS) {
         clearInterval(id);
-        onExpiredRef.current?.();
-      } else {
-        setTick((n) => n + 1);
+        onExpired?.();
       }
     }, 1000);
     return () => clearInterval(id);
-  }, [createdAt]); // onExpired ref'te tutuluyor, effect yeniden başlatılmıyor
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const elapsed   = Date.now() - new Date(createdAt).getTime();
+  const created   = new Date(createdAt).getTime();
+  const elapsed   = now - created;
   const isPhase1  = elapsed < PREP_MS;
-  const remaining = isPhase1 ? PREP_MS - elapsed : TOTAL_MS - elapsed;
-  const urgent    = remaining < 5 * 60 * 1000;
+  const remaining = Math.max(0, isPhase1 ? PREP_MS - elapsed : TOTAL_MS - elapsed);
+  const urgent    = !isPhase1 && remaining < 5 * 60 * 1000;
 
   const label = isPhase1
     ? `Siparişinin tamamlanmasına ${fmt(remaining)} kaldı`
@@ -50,10 +49,23 @@ function OrderCountdown({ createdAt, onExpired }) {
 
   const bg    = urgent ? '#fdecea' : isPhase1 ? '#fff8e1' : '#e8f4fd';
   const color = urgent ? '#c0392b' : isPhase1 ? '#c17f24' : '#2471a3';
+  const icon  = isPhase1 ? '🍳' : '🏃';
 
   return (
-    <div style={{ background: bg, color, borderRadius: 8, padding: '8px 14px', fontSize: '0.85rem', fontWeight: 700, marginTop: 10 }}>
-      {isPhase1 ? '🍳 ' : '🏃 '}{label}
+    <div style={{
+      background: bg,
+      color,
+      borderRadius: 8,
+      padding: '10px 14px',
+      fontSize: '0.85rem',
+      fontWeight: 700,
+      marginTop: 10,
+      display: 'flex',
+      alignItems: 'center',
+      gap: 6,
+    }}>
+      <span>{icon}</span>
+      <span>{label}</span>
     </div>
   );
 }
