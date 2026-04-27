@@ -46,9 +46,9 @@ router.post('/', verifyToken, requireRole('employee', 'admin'), async (req, res)
     const menuItem = await MenuItem.findById(menuItemId);
     if (!menuItem) return res.status(404).json({ message: 'Menü öğesi bulunamadı' });
 
-    // Kapanış saati: bugün 22:00
+    // Kapanış saati: bugün 22:00 Türkiye saati (UTC+3 = 19:00 UTC)
     const closeAt = new Date();
-    closeAt.setHours(22, 0, 0, 0);
+    closeAt.setUTCHours(19, 0, 0, 0);
 
     if (new Date() >= closeAt) {
       return res.status(400).json({ message: "Bugünkü satış saati sona erdi (22:00). Yarın tekrar deneyin." });

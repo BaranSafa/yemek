@@ -56,7 +56,8 @@ async function seed() {
   console.log(`🍽️  ${menuItems.length} menü öğesi oluşturuldu`);
 
   // ── Bugünkü listeler (çalışan tarafından eklenir) ──────────────────────────
-  const closeAt = new Date(); closeAt.setHours(22, 0, 0, 0);
+  // 22:00 Türkiye saati = 19:00 UTC (UTC+3)
+  const closeAt = new Date(); closeAt.setUTCHours(19, 0, 0, 0);
   const now = new Date();
 
   const listingData = [
