@@ -2,10 +2,10 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const path = require('path');
 
 const app = express();
 
-// CORS — Netlify ve localhost'a izin ver
 const allowedOrigins = [
   process.env.FRONTEND_URL,
   'http://localhost:5173',
@@ -34,8 +34,14 @@ app.use('/api/products',   require('./routes/products'));
 app.use('/api/orders',     require('./routes/orders'));
 app.use('/api/admin',      require('./routes/admin'));
 
-// 404
-app.use((req, res) => res.status(404).json({ message: 'Sayfa bulunamadı' }));
+// Production: React build'ini serve et
+if (process.env.NODE_ENV === 'production') {
+  const distPath = path.join(__dirname, '../dist');
+  app.use(express.static(distPath));
+  app.get('*', (req, res) => res.sendFile(path.join(distPath, 'index.html')));
+} else {
+  app.use((req, res) => res.status(404).json({ message: 'Sayfa bulunamadı' }));
+}
 
 // Hata yakalayıcı
 app.use((err, req, res, next) => {
