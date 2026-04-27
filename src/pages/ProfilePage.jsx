@@ -22,26 +22,27 @@ function fmt(ms) {
 }
 
 function OrderCountdown({ createdAt, onExpired }) {
-  const [, forceUpdate] = useState(0);
-  const ref = useRef(null);
+  const [tick, setTick] = useState(0);
+  const onExpiredRef    = useRef(onExpired);
+  onExpiredRef.current  = onExpired;
 
   useEffect(() => {
-    ref.current = setInterval(() => {
+    const id = setInterval(() => {
       const elapsed = Date.now() - new Date(createdAt).getTime();
       if (elapsed >= TOTAL_MS) {
-        clearInterval(ref.current);
-        onExpired();
+        clearInterval(id);
+        onExpiredRef.current?.();
       } else {
-        forceUpdate((n) => n + 1);
+        setTick((n) => n + 1);
       }
     }, 1000);
-    return () => clearInterval(ref.current);
-  }, [createdAt, onExpired]);
+    return () => clearInterval(id);
+  }, [createdAt]); // onExpired ref'te tutuluyor, effect yeniden başlatılmıyor
 
   const elapsed   = Date.now() - new Date(createdAt).getTime();
   const isPhase1  = elapsed < PREP_MS;
   const remaining = isPhase1 ? PREP_MS - elapsed : TOTAL_MS - elapsed;
-  const urgent    = remaining < 5 * 60 * 1000; // son 5 dk
+  const urgent    = remaining < 5 * 60 * 1000;
 
   const label = isPhase1
     ? `Siparişinin tamamlanmasına ${fmt(remaining)} kaldı`
@@ -51,7 +52,7 @@ function OrderCountdown({ createdAt, onExpired }) {
   const color = urgent ? '#c0392b' : isPhase1 ? '#c17f24' : '#2471a3';
 
   return (
-    <div style={{ background: bg, color, borderRadius: 8, padding: '8px 14px', fontSize: '0.82rem', fontWeight: 700, marginTop: 8 }}>
+    <div style={{ background: bg, color, borderRadius: 8, padding: '8px 14px', fontSize: '0.85rem', fontWeight: 700, marginTop: 10 }}>
       {isPhase1 ? '🍳 ' : '🏃 '}{label}
     </div>
   );
@@ -246,7 +247,7 @@ export default function ProfilePage() {
 
 function OrderCard({ order, onCancel, cancelling, onExpired }) {
   const st = STATUS[order.status] || STATUS['Bekliyor'];
-  const showCountdown = order.status === 'Bekliyor' && onExpired;
+  const showCountdown = order.status === 'Bekliyor';
 
   return (
     <div style={orderCard}>
