@@ -1,8 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { authAPI, orderAPI } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
+
+const PREP_MS  = 30 * 60 * 1000; // 30 dk hazırlık
+const TOTAL_MS = 60 * 60 * 1000; // 60 dk toplam süre
 
 const STATUS = {
   'Bekliyor':      { bg: '#fff8e1', color: '#c17f24', label: '⏳ Bekliyor' },
@@ -10,21 +13,61 @@ const STATUS = {
   'İptal':         { bg: '#fdecea', color: '#c0392b', label: '❌ İptal' },
 };
 
+function fmt(ms) {
+  if (ms <= 0) return '0:00';
+  const totalSec = Math.floor(ms / 1000);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function OrderCountdown({ createdAt, onExpired }) {
+  const [, forceUpdate] = useState(0);
+  const ref = useRef(null);
+
+  useEffect(() => {
+    ref.current = setInterval(() => {
+      const elapsed = Date.now() - new Date(createdAt).getTime();
+      if (elapsed >= TOTAL_MS) {
+        clearInterval(ref.current);
+        onExpired();
+      } else {
+        forceUpdate((n) => n + 1);
+      }
+    }, 1000);
+    return () => clearInterval(ref.current);
+  }, [createdAt, onExpired]);
+
+  const elapsed   = Date.now() - new Date(createdAt).getTime();
+  const isPhase1  = elapsed < PREP_MS;
+  const remaining = isPhase1 ? PREP_MS - elapsed : TOTAL_MS - elapsed;
+  const urgent    = remaining < 5 * 60 * 1000; // son 5 dk
+
+  const label = isPhase1
+    ? `Siparişinin tamamlanmasına ${fmt(remaining)} kaldı`
+    : `Siparişinin alınması için ${fmt(remaining)} kaldı`;
+
+  const bg    = urgent ? '#fdecea' : isPhase1 ? '#fff8e1' : '#e8f4fd';
+  const color = urgent ? '#c0392b' : isPhase1 ? '#c17f24' : '#2471a3';
+
+  return (
+    <div style={{ background: bg, color, borderRadius: 8, padding: '8px 14px', fontSize: '0.82rem', fontWeight: 700, marginTop: 8 }}>
+      {isPhase1 ? '🍳 ' : '🏃 '}{label}
+    </div>
+  );
+}
+
 export default function ProfilePage() {
   const { user, login } = useAuth();
-  const [searchParams] = useSearchParams();
-  const [tab, setTab] = useState(searchParams.get('tab') || 'profile');
+  const [searchParams]  = useSearchParams();
+  const [tab, setTab]   = useState(searchParams.get('tab') || 'profile');
 
-  const [form, setForm] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    password: '',
-  });
+  const [form, setForm]   = useState({ firstName: user?.firstName || '', lastName: user?.lastName || '', password: '' });
   const [saving, setSaving] = useState(false);
 
-  const [orders, setOrders] = useState([]);
+  const [orders, setOrders]           = useState([]);
   const [ordersLoading, setOrdersLoading] = useState(false);
-  const [cancelling, setCancelling] = useState(null);
+  const [cancelling, setCancelling]   = useState(null);
 
   const loadOrders = () => {
     setOrdersLoading(true);
@@ -70,6 +113,12 @@ export default function ProfilePage() {
     }
   };
 
+  // Süre dolunca backend zaten iptal etmiş olur; listeyi yenile
+  const handleExpired = (orderId) => {
+    setOrders((prev) => prev.map((o) => o._id === orderId ? { ...o, status: 'İptal' } : o));
+    toast('Sipariş süresi doldu ve otomatik iptal edildi.', { icon: '⏰' });
+  };
+
   const activeOrders = orders.filter((o) => o.status === 'Bekliyor');
   const pastOrders   = orders.filter((o) => o.status !== 'Bekliyor');
 
@@ -104,22 +153,10 @@ export default function ProfilePage() {
               </div>
             </div>
             <div style={infoGrid}>
-              <div style={infoItem}>
-                <span style={infoLabel}>Ad</span>
-                <span style={infoValue}>{user?.firstName}</span>
-              </div>
-              <div style={infoItem}>
-                <span style={infoLabel}>Soyad</span>
-                <span style={infoValue}>{user?.lastName}</span>
-              </div>
-              <div style={infoItem}>
-                <span style={infoLabel}>Telefon</span>
-                <span style={infoValue}>{user?.phone}</span>
-              </div>
-              <div style={infoItem}>
-                <span style={infoLabel}>Rol</span>
-                <span style={infoValue}>Müşteri</span>
-              </div>
+              <div style={infoItem}><span style={infoLabel}>Ad</span><span style={infoValue}>{user?.firstName}</span></div>
+              <div style={infoItem}><span style={infoLabel}>Soyad</span><span style={infoValue}>{user?.lastName}</span></div>
+              <div style={infoItem}><span style={infoLabel}>Telefon</span><span style={infoValue}>{user?.phone}</span></div>
+              <div style={infoItem}><span style={infoLabel}>Rol</span><span style={infoValue}>Müşteri</span></div>
             </div>
             <button className="btn btn-primary btn-sm" style={{ marginTop: 20 }} onClick={() => setTab('edit')}>
               Profili Düzenle
@@ -174,7 +211,13 @@ export default function ProfilePage() {
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {activeOrders.map((order) => (
-                <OrderCard key={order._id} order={order} onCancel={handleCancel} cancelling={cancelling} />
+                <OrderCard
+                  key={order._id}
+                  order={order}
+                  onCancel={handleCancel}
+                  cancelling={cancelling}
+                  onExpired={() => handleExpired(order._id)}
+                />
               ))}
             </div>
           )
@@ -201,8 +244,10 @@ export default function ProfilePage() {
   );
 }
 
-function OrderCard({ order, onCancel, cancelling }) {
+function OrderCard({ order, onCancel, cancelling, onExpired }) {
   const st = STATUS[order.status] || STATUS['Bekliyor'];
+  const showCountdown = order.status === 'Bekliyor' && onExpired;
+
   return (
     <div style={orderCard}>
       <div style={orderHeader}>
@@ -226,6 +271,10 @@ function OrderCard({ order, onCancel, cancelling }) {
             <span style={{ fontWeight: 600 }}>₺{item.totalPrice.toFixed(2)}</span>
           </div>
         ))}
+
+        {showCountdown && (
+          <OrderCountdown createdAt={order.createdAt} onExpired={onExpired} />
+        )}
       </div>
 
       <div style={orderFooter}>
@@ -242,11 +291,7 @@ function OrderCard({ order, onCancel, cancelling }) {
               </div>
             </div>
             {onCancel && (
-              <button
-                onClick={() => onCancel(order._id)}
-                disabled={cancelling === order._id}
-                style={cancelBtn}
-              >
+              <button onClick={() => onCancel(order._id)} disabled={cancelling === order._id} style={cancelBtnStyle}>
                 {cancelling === order._id ? '...' : 'İptal Et'}
               </button>
             )}
@@ -263,21 +308,21 @@ function OrderCard({ order, onCancel, cancelling }) {
   );
 }
 
-const page        = { paddingTop: 40, paddingBottom: 64, minHeight: 'calc(100vh - 70px)' };
-const pageTitle   = { fontFamily: "'Playfair Display', serif", fontSize: '2rem', marginBottom: 24 };
-const tabRow      = { display: 'flex', borderBottom: '2px solid var(--border)', marginBottom: 28, gap: 4, flexWrap: 'wrap' };
-const tabBtn      = { padding: '10px 18px', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' };
-const tabActive   = { color: 'var(--terracotta)', borderBottom: '2px solid var(--terracotta)', marginBottom: -2 };
-const card        = { background: 'var(--warm-white)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 28, boxShadow: 'var(--shadow-sm)' };
+const page         = { paddingTop: 40, paddingBottom: 64, minHeight: 'calc(100vh - 70px)' };
+const pageTitle    = { fontFamily: "'Playfair Display', serif", fontSize: '2rem', marginBottom: 24 };
+const tabRow       = { display: 'flex', borderBottom: '2px solid var(--border)', marginBottom: 28, gap: 4, flexWrap: 'wrap' };
+const tabBtn       = { padding: '10px 18px', background: 'none', border: 'none', cursor: 'pointer', fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-muted)', fontFamily: "'DM Sans', sans-serif", whiteSpace: 'nowrap' };
+const tabActive    = { color: 'var(--terracotta)', borderBottom: '2px solid var(--terracotta)', marginBottom: -2 };
+const card         = { background: 'var(--warm-white)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: 28, boxShadow: 'var(--shadow-sm)' };
 const sectionTitle = { fontFamily: "'Playfair Display', serif", fontSize: '1.3rem', marginBottom: 20, marginTop: 0 };
-const avatarRow   = { display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 };
+const avatarRow    = { display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 };
 const avatarCircle = { width: 60, height: 60, borderRadius: '50%', background: 'var(--terracotta)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '1.6rem', flexShrink: 0 };
-const infoGrid    = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 };
-const infoItem    = { display: 'flex', flexDirection: 'column', gap: 4 };
-const infoLabel   = { fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' };
-const infoValue   = { fontSize: '1rem', fontWeight: 600, color: 'var(--charcoal)' };
-const empty       = { textAlign: 'center', padding: '64px 0', color: 'var(--charcoal)' };
-const orderCard   = { background: 'var(--warm-white)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' };
-const orderHeader = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', background: 'var(--cream)', borderBottom: '1px solid var(--border)' };
-const orderFooter = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', borderTop: '1px solid var(--border)', flexWrap: 'wrap', gap: 12 };
-const cancelBtn   = { padding: '6px 16px', background: 'none', border: '2px solid #c0392b', color: '#c0392b', borderRadius: '999px', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" };
+const infoGrid     = { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 };
+const infoItem     = { display: 'flex', flexDirection: 'column', gap: 4 };
+const infoLabel    = { fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.06em', textTransform: 'uppercase' };
+const infoValue    = { fontSize: '1rem', fontWeight: 600, color: 'var(--charcoal)' };
+const empty        = { textAlign: 'center', padding: '64px 0', color: 'var(--charcoal)' };
+const orderCard    = { background: 'var(--warm-white)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' };
+const orderHeader  = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', background: 'var(--cream)', borderBottom: '1px solid var(--border)' };
+const orderFooter  = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', borderTop: '1px solid var(--border)', flexWrap: 'wrap', gap: 12 };
+const cancelBtnStyle = { padding: '6px 16px', background: 'none', border: '2px solid #c0392b', color: '#c0392b', borderRadius: '999px', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" };

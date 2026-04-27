@@ -62,6 +62,7 @@ mongoose
   .connect(MONGO_URI)
   .then(() => {
     console.log('✅ MongoDB bağlandı');
+    require('./jobs/autoCancel').startAutoCancel();
     app.listen(PORT, () => console.log(`🚀 Sunucu çalışıyor → http://localhost:${PORT}`));
   })
   .catch((err) => {
