@@ -116,6 +116,10 @@ export default {
     statusPending: '⏳ Teslim Alınmayı Bekliyor',
     statusDone: '✅ Teslim Edildi',
     statusCancelled: '❌ İptal Edildi',
+    cancelBtn: 'İptal Et',
+    cancelConfirm: 'Bu siparişi iptal etmek istediğinize emin misiniz?',
+    cancelSuccess: 'Sipariş iptal edildi.',
+    cancelError: 'İptal işlemi başarısız oldu.',
   },
   product: {
     outOfStock: 'STOK YOK',

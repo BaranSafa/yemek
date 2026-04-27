@@ -6,6 +6,7 @@ export default function MyOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState('active');
+  const [cancelling, setCancelling] = useState(null);
   const { t } = useLanguage();
 
   const statusStyle = {
@@ -20,6 +21,19 @@ export default function MyOrdersPage() {
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
+
+  const handleCancel = async (orderId) => {
+    if (!window.confirm(t('orders.cancelConfirm'))) return;
+    setCancelling(orderId);
+    try {
+      await orderAPI.cancel(orderId);
+      setOrders((prev) => prev.map((o) => o._id === orderId ? { ...o, status: 'İptal' } : o));
+    } catch {
+      alert(t('orders.cancelError'));
+    } finally {
+      setCancelling(null);
+    }
+  };
 
   const activeOrders = orders.filter((o) => o.status === 'Bekliyor');
   const pastOrders = orders.filter((o) => o.status !== 'Bekliyor');
@@ -82,11 +96,20 @@ export default function MyOrdersPage() {
                     </span>
 
                     {order.status === 'Bekliyor' && (
-                      <div style={codeWrap}>
-                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.08em' }}>
-                          {t('orders.codeLabel')}
-                        </span>
-                        <div style={codeDigits}>{order.deliveryCode}</div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                        <div style={codeWrap}>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.08em' }}>
+                            {t('orders.codeLabel')}
+                          </span>
+                          <div style={codeDigits}>{order.deliveryCode}</div>
+                        </div>
+                        <button
+                          onClick={() => handleCancel(order._id)}
+                          disabled={cancelling === order._id}
+                          style={cancelBtn}
+                        >
+                          {cancelling === order._id ? '...' : t('orders.cancelBtn')}
+                        </button>
                       </div>
                     )}
 
@@ -96,6 +119,7 @@ export default function MyOrdersPage() {
                       </span>
                     )}
                   </div>
+
                 </div>
               );
             })}
@@ -116,5 +140,6 @@ const empty = { textAlign: 'center', padding: '48px 0', color: 'var(--charcoal)'
 const orderCard = { background: 'var(--warm-white)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', boxShadow: 'var(--shadow-sm)', overflow: 'hidden' };
 const orderHeader = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '14px 20px', background: 'var(--cream)', borderBottom: '1px solid var(--border)' };
 const orderFooter = { display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', borderTop: '1px solid var(--border)', flexWrap: 'wrap', gap: 12 };
+const cancelBtn = { padding: '6px 16px', background: 'none', border: '2px solid #c0392b', color: '#c0392b', borderRadius: '999px', fontWeight: 600, fontSize: '0.82rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" };
 const codeWrap = { display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 2 };
 const codeDigits = { fontFamily: "'Playfair Display', serif", fontSize: '1.8rem', fontWeight: 900, color: 'var(--terracotta)', letterSpacing: '0.18em' };

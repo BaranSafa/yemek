@@ -7,7 +7,6 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import CartPage from './pages/CartPage';
 import CheckoutPage from './pages/CheckoutPage';
-import MyOrdersPage from './pages/MyOrdersPage';
 import NotFoundPage from './pages/NotFoundPage';
 
 // Employee pages
@@ -55,7 +54,7 @@ export default function App() {
           {/* Customer */}
           <Route path="/cart" element={<ProtectedRoute roles={['customer']}><CartPage /></ProtectedRoute>} />
           <Route path="/checkout" element={<ProtectedRoute roles={['customer']}><CheckoutPage /></ProtectedRoute>} />
-          <Route path="/orders" element={<ProtectedRoute roles={['customer']}><MyOrdersPage /></ProtectedRoute>} />
+          <Route path="/orders" element={<Navigate to="/profile" replace />} />
           <Route path="/profile" element={<ProtectedRoute roles={['customer']}><ProfilePage /></ProtectedRoute>} />
 
           {/* Employee */}

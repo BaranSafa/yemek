@@ -76,7 +76,7 @@ export default function Navbar() {
                   {user.role === 'customer' && (
                     <>
                       <Link to="/profile" style={styles.dropdownItem}>👤 {t('nav.profile')}</Link>
-                      <Link to="/orders" style={styles.dropdownItem}>📦 {t('nav.orders')}</Link>
+                      <Link to="/profile?tab=orders" style={styles.dropdownItem}>📦 {t('nav.orders')}</Link>
                     </>
                   )}
 

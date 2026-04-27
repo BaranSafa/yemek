@@ -116,6 +116,10 @@ export default {
     statusPending: '⏳ Awaiting Pickup',
     statusDone: '✅ Delivered',
     statusCancelled: '❌ Cancelled',
+    cancelBtn: 'Cancel Order',
+    cancelConfirm: 'Are you sure you want to cancel this order?',
+    cancelSuccess: 'Order cancelled.',
+    cancelError: 'Cancellation failed.',
   },
   product: {
     outOfStock: 'OUT OF STOCK',

@@ -63,6 +63,7 @@ export const orderAPI = {
   myOrders: ()       => api.get('/orders/my'),
   allOrders:(params) => api.get('/orders', { params }),
   deliver:  (code)   => api.post(`/orders/deliver/${code}`),
+  cancel:   (id)     => api.post(`/orders/${id}/cancel`),
   stats:    ()       => api.get('/orders/stats'),
 };
 

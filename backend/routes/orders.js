@@ -118,6 +118,42 @@ router.get('/', verifyToken, requireRole('employee', 'admin'), async (req, res) 
   }
 });
 
+// POST /orders/:id/cancel — sipariş iptal et
+// Müşteri: kendi siparişini iptal edebilir
+// Çalışan/Admin: herhangi bir siparişi iptal edebilir
+router.post('/:id/cancel', verifyToken, async (req, res) => {
+  try {
+    const { role, _id: userId } = req.user;
+
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Sipariş bulunamadı' });
+
+    if (role === 'customer' && order.user.toString() !== userId.toString()) {
+      return res.status(403).json({ message: 'Bu siparişi iptal etme yetkiniz yok' });
+    }
+
+    if (order.status !== 'Bekliyor') {
+      return res.status(400).json({ message: 'Sadece bekleyen siparişler iptal edilebilir' });
+    }
+
+    for (const item of order.items) {
+      const product = await Product.findById(item.productId);
+      if (product) {
+        product.remainingPortions += item.quantity;
+        product.isActive = true;
+        await product.save();
+      }
+    }
+
+    order.status = 'İptal';
+    await order.save();
+
+    res.json({ message: 'Sipariş iptal edildi', order });
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
 // POST /orders/deliver/:code — teslimat kodu ile teslim et (çalışan/admin)
 router.post('/deliver/:code', verifyToken, requireRole('employee', 'admin'), async (req, res) => {
   try {

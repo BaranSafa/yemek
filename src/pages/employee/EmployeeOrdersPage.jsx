@@ -11,6 +11,7 @@ export default function EmployeeOrdersPage() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('');
+  const [cancelling, setCancelling] = useState(null);
 
   const fetchOrders = async () => {
     try {
@@ -21,6 +22,19 @@ export default function EmployeeOrdersPage() {
   };
 
   useEffect(() => { fetchOrders(); }, [filter]);
+
+  const handleCancel = async (orderId) => {
+    if (!window.confirm('Bu siparişi iptal etmek istediğinize emin misiniz?')) return;
+    setCancelling(orderId);
+    try {
+      await orderAPI.cancel(orderId);
+      setOrders((prev) => prev.map((o) => o._id === orderId ? { ...o, status: 'İptal' } : o));
+    } catch {
+      alert('İptal işlemi başarısız oldu.');
+    } finally {
+      setCancelling(null);
+    }
+  };
 
   return (
     <div style={page}>
@@ -68,11 +82,20 @@ export default function EmployeeOrdersPage() {
                     </div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 600 }}>KOD</div>
                   </div>
-                  <div style={{ textAlign: 'right', minWidth: 100 }}>
+                  <div style={{ textAlign: 'right', minWidth: 100, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
                     <div style={{ fontWeight: 700, color: 'var(--terracotta)' }}>₺{order.totalAmount.toFixed(2)}</div>
                     <span style={{ background: st.bg, color: st.color, padding: '3px 10px', borderRadius: '999px', fontSize: '0.75rem', fontWeight: 600 }}>
                       {st.label}
                     </span>
+                    {order.status === 'Bekliyor' && (
+                      <button
+                        onClick={() => handleCancel(order._id)}
+                        disabled={cancelling === order._id}
+                        style={empCancelBtn}
+                      >
+                        {cancelling === order._id ? '...' : 'İptal Et'}
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -87,3 +110,4 @@ export default function EmployeeOrdersPage() {
 const page = { paddingTop: 40, paddingBottom: 64, minHeight: 'calc(100vh - 70px)' };
 const pageTitle = { fontFamily: "'Playfair Display', serif", fontSize: '2rem', marginBottom: 24 };
 const orderRow = { background: 'var(--warm-white)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '16px 20px', display: 'flex', alignItems: 'center', gap: 20, boxShadow: 'var(--shadow-sm)', flexWrap: 'wrap' };
+const empCancelBtn = { padding: '4px 12px', background: 'none', border: '2px solid #c0392b', color: '#c0392b', borderRadius: '999px', fontWeight: 600, fontSize: '0.78rem', cursor: 'pointer', fontFamily: "'DM Sans', sans-serif" };
